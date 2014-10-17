@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,7 +45,6 @@ public class RDBMSStreamingDataStoreMetadata extends RDBMSDataStoreMetadata {
 	}
 	
 	public void createMetadataTable(){
-		if(checkIfMetadataTableExists()) {return;}
 		super.createMetadataTable();
 		if(checkIfMetadataTableExists()) {return;}
 		try {
@@ -56,7 +56,7 @@ public class RDBMSStreamingDataStoreMetadata extends RDBMSDataStoreMetadata {
 	}
 	
 	
-	protected String[] getValues(String mdTableName, String space, String type, String key){
+	protected List<String> getValues(String mdTableName, String space, String type, String key){
 		ArrayList<String> retStrings = new ArrayList<String>();
 		try {
 			PreparedStatement stmt = super.getConnection().prepareStatement("SELECT value from "+mdTableName+" WHERE namespace = ? AND keytype = ? AND key = ?");
@@ -72,7 +72,7 @@ public class RDBMSStreamingDataStoreMetadata extends RDBMSDataStoreMetadata {
 			log.error(e.getMessage());
 			return null;
 		}
-		return (String[]) retStrings.toArray();
+		return retStrings;
 	}
 
 	/**** Stream-related functions ****/
@@ -109,7 +109,7 @@ public class RDBMSStreamingDataStoreMetadata extends RDBMSDataStoreMetadata {
 	
 	protected Set<Partition> getStreamPartitions(Stream s){
 		HashSet<Partition> partitions = new HashSet<Partition>();
-		String[] partStrings = getValues(streamingMDTableName,"Stream", "partition", s.getName());
+		List<String> partStrings = getValues(streamingMDTableName,"Stream", "partition", s.getName());
 		for(String pStr : partStrings){
 			Partition p = getPartitionByName(pStr);
 			if(p == null){return null;}

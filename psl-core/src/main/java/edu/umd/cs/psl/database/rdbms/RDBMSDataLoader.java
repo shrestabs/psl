@@ -189,7 +189,7 @@ public class RDBMSDataLoader implements DataLoader {
 			    insertStmt.executeUpdate();
 
 			} catch (SQLException e) {
-				log.error(e.getMessage() + "\n" + Arrays.toString(data));
+				log.error(e.getMessage() + "\n(data): " + Arrays.toString(data));
 				throw new AssertionError(e);
 			}
 		}

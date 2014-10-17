@@ -413,7 +413,7 @@ public class RDBMSDatabase implements Database {
 	    			result = cache.instantiateObservedAtom(p, arguments, value, confidence);
 	    		}
 	    		if (rs.next())
-	    			throw new IllegalStateException("Atom cannot exist in more than one partition.");
+	    			throw new IllegalStateException("Atom cannot exist in more than one partition."+qAtom);
 			}
 			rs.close();
 		} catch (SQLException e) {

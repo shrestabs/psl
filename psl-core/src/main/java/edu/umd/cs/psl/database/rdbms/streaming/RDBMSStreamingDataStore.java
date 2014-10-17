@@ -18,7 +18,6 @@
 package edu.umd.cs.psl.database.rdbms.streaming;
 
 import java.sql.Connection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,6 +50,7 @@ public class RDBMSStreamingDataStore  extends RDBMSDataStore implements
 
 	@Override
 	protected void initializeMetadata(Connection conn, String tblName){
+		super.initializeMetadata(conn, tblName);
 		this.metadata = new RDBMSStreamingDataStoreMetadata(conn, tblName);
 		metadata.createMetadataTable();
 	}
@@ -83,7 +83,7 @@ public class RDBMSStreamingDataStore  extends RDBMSDataStore implements
 	
 	public void close() {
 		if (!openStreams.isEmpty())
-			throw new IllegalStateException("Cannot close data store when databases are still open!");
+			throw new IllegalStateException("Cannot close data store when streams are still open!");
 		super.close();
 	}
 	

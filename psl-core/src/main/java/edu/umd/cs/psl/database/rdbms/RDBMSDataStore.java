@@ -475,13 +475,19 @@ public class RDBMSDataStore implements DataStore {
 
 	@Override
 	public void close() {
-		if (!openDatabases.isEmpty())
-			throw new IllegalStateException("Cannot close data store when databases are still open!");
-		try {
-			connection.close();
-		} catch (SQLException e) {
-			throw new RuntimeException("Could not close database.", e);
+	    if (!openDatabases.isEmpty()){
+		String errMsg = "\nDatabase IDs:";
+		for(RDBMSDatabase db : openDatabases.values()){
+		    errMsg+=" ";
+		    errMsg+=getDatabaseID(db);
 		}
+		throw new IllegalStateException("Cannot close data store when databases are still open!,"+errMsg);
+	    }
+	    try {
+		connection.close();
+	    } catch (SQLException e) {
+		throw new RuntimeException("Could not close database.", e);
+	    }
 	}
 
 	
@@ -634,6 +640,7 @@ public class RDBMSDataStore implements DataStore {
 	@Override
 	public Partition getPartition(String partitionName) {
 		Partition p = metadata.getPartitionByName(partitionName);
+		
 		if(p == null){
 			p = new RDBMSPartition(getNextPartition(), partitionName);
 			metadata.addPartition(p);

@@ -17,6 +17,7 @@
 package edu.umd.cs.psl.groovy
 
 import edu.umd.cs.psl.database.DataStore
+import edu.umd.cs.psl.database.Stream
 import edu.umd.cs.psl.groovy.syntax.FormulaContainer
 import edu.umd.cs.psl.groovy.syntax.GenericVariable
 import edu.umd.cs.psl.model.Model
@@ -28,6 +29,7 @@ import edu.umd.cs.psl.model.argument.Term
 import edu.umd.cs.psl.model.argument.Variable
 import edu.umd.cs.psl.model.argument.VariableTypeMap
 import edu.umd.cs.psl.model.atom.QueryAtom
+import edu.umd.cs.psl.model.atom.StreamingAtom
 import edu.umd.cs.psl.model.formula.Formula
 import edu.umd.cs.psl.model.function.ExternalFunction
 import edu.umd.cs.psl.model.kernel.Kernel
@@ -112,7 +114,7 @@ class PSLModel extends Model {
 	 */
 	public Object createFormulaContainer(String name, Object[] args) {
 		Predicate pred = pf.getPredicate(name);
-		
+		Stream stream = null;
 		if (pred != null) {
 			Term[] terms = new Term[args.size()];
 			
@@ -127,11 +129,20 @@ class PSLModel extends Model {
 					terms[i] = new DoubleAttribute(args[i]);
 				} else if (args[i] instanceof Integer) {
 					terms[i] = new IntegerAttribute(args[i]);
+				} else if (args[i] instanceof Stream && i == args.size()-1) {
+					stream = args[i];
 				} else 
 					throw new IllegalArgumentException("The arguments to predicate ${name} must be terms");
 			}
-			
-			return new FormulaContainer(new QueryAtom(pred, terms));
+			if(stream != null){
+			  Term[] newTerms = new Term[args.size()-1];
+			  for(int i = 0; i<newTerms.length; i++){ 
+			    newTerms[i] = terms[i];
+			  }
+				return new FormulaContainer(new StreamingAtom(pred,newTerms,stream));
+			} else {
+				return new FormulaContainer(new QueryAtom(pred, terms));
+			}
 		} else if (setComparisons.containsKey(name)) {
 			Map setcomp = setComparisons[name];
 			if (args.size() != 2)

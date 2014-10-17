@@ -37,6 +37,7 @@ import edu.umd.cs.psl.model.argument.Term;
 import edu.umd.cs.psl.model.argument.UniqueID;
 import edu.umd.cs.psl.model.argument.Variable;
 import edu.umd.cs.psl.model.atom.Atom;
+import edu.umd.cs.psl.model.atom.StreamingAtom;
 import edu.umd.cs.psl.model.atom.VariableAssignment;
 import edu.umd.cs.psl.model.formula.Formula;
 import edu.umd.cs.psl.model.formula.traversal.AbstractFormulaTraverser;
@@ -209,8 +210,8 @@ public class Formula2SQL extends AbstractFormulaTraverser {
 			}
 			
 			ArrayList<Integer> partitions;
-			if(atom.getPredicate() instanceof StreamingPredicate){
-				Stream s = ((StreamingPredicate) atom.getPredicate()).getStream();
+			if(atom instanceof StreamingAtom){
+				Stream s = ((StreamingAtom)atom).getStream();
 				partitions = new ArrayList<Integer>();
 				for(Partition p : s.getPartitions()){
 					partitions.add(p.getID());
