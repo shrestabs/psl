@@ -67,6 +67,7 @@ public class Grounding {
      * @return the number of ground rules generated.
      */
     public static int groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        System.out.println("groundall without rules\n");
         return groundAll(model.getRules(), atomManager, groundRuleStore);
     }
 
@@ -89,6 +90,7 @@ public class Grounding {
      * @return the number of ground rules generated.
      */
     public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        System.out.println("The real groundall");
         boolean rewrite = Config.getBoolean(REWRITE_QUERY_KEY, REWRITE_QUERY_DEFAULT);
         boolean serial = Config.getBoolean(SERIAL_KEY, SERIAL_DEFAULT);
 
@@ -162,7 +164,6 @@ public class Grounding {
         QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
         Parallel.RunTimings timings = Parallel.foreach(queryResults, new GroundWorker(atomManager, groundRuleStore, queryResults.getVariableMap(), rules));
         int groundCount = groundRuleStore.size() - initialCount;
-
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
         log.trace("Got {} results from query [{}].", timings.iterations, query);
