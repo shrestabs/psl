@@ -100,7 +100,7 @@ public class Grounding {
         }
         else {
             log.info("Running Grounding as slave node");
-            DistributedGroundingWorkerThread t = new DistributedGroundingWorkerThread(DistributedGroundingUtil.masterNodeName);
+            DistributedGroundingWorkerThread t = new DistributedGroundingWorkerThread(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME);
             t.start();
         }
 

@@ -23,6 +23,7 @@ import java.io.*;
 public class DistributedGroundingWorkerThread extends Thread {
     String serverName;
     final int port = 6066;
+
     public DistributedGroundingWorkerThread(String masterNodeName) {
         serverName = masterNodeName;
     }
