@@ -32,8 +32,8 @@ import java.util.List;
 public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
-    public static String masterNodeName = "seacliff" + DOMAIN_NAME;
-    public static List<String> slaveNodeNameList = Arrays.asList("sozopol" + DOMAIN_NAME, "sunset" + DOMAIN_NAME, "information-cast.local");
+    public static String masterNodeName = "seacliff";
+    public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "information-cast.local");
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}
@@ -41,6 +41,8 @@ public class DistributedGroundingUtil {
     public static boolean isNodeRoleMaster() {
         String hostname = SystemUtils.getHostname();
         log.info("Hostname is " + hostname);
+        System.out.println("Masternode name is " + masterNodeName);
+        System.out.println(slaveNodeNameList);
         if (hostname.equals(masterNodeName)) {
             isMaster = true;
         }
