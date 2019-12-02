@@ -20,19 +20,38 @@ package org.linqs.psl.grounding;
 import java.net.*;
 import java.io.*;
 
-public class DistributedGroundingMaster extends Thread {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DistributedGroundingMasterThread extends Thread {
+    private static final Logger log = LoggerFactory.getLogger(DistributedGroundingMasterThread.class);
+    private static boolean groundingStatus = true;
     private ServerSocket serverSocket;
+    private final int port = 6066;
    
-    public DistributedGroundingMaster(int port) throws IOException {
-       serverSocket = new ServerSocket(port);
-       serverSocket.setSoTimeout(10000);
+    public DistributedGroundingMasterThread() {
+        try {
+            serverSocket = new ServerSocket(port);
+            serverSocket.setSoTimeout(10000);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
- 
+
+    public static boolean getGroundingStatus () {
+        return groundingStatus;
+    }
+
+    public static void setGroundingStatus (boolean status) {
+        groundingStatus = status;
+    }
+
     public void run() {
-       while(true) {
+       while(groundingStatus) {
           try {
-             System.out.println("Waiting for client on port " + 
-                serverSocket.getLocalPort() + "...");
+             log.info("Waiting for slaves on port " + 
+                serverSocket.getLocalPort() + " to come online...");
              Socket server = serverSocket.accept();
              
              System.out.println("Just connected to " + server.getRemoteSocketAddress());
@@ -45,22 +64,12 @@ public class DistributedGroundingMaster extends Thread {
              server.close();
              
           } catch (SocketTimeoutException s) {
-             System.out.println("Socket timed out!");
-             break;
+                System.out.println("Socket timed out!");
+                break;
           } catch (IOException e) {
-             e.printStackTrace();
+                e.printStackTrace();
              break;
           }
-       }
-    }
-    
-    public static void runMaster(String [] args) {
-       int port = Integer.parseInt(args[0]);
-       try {
-          Thread t = new DistributedGroundingMaster(port);
-          t.start();
-       } catch (IOException e) {
-          e.printStackTrace();
        }
     }
 }

@@ -67,7 +67,6 @@ public class Grounding {
      * @return the number of ground rules generated.
      */
     public static int groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        System.out.println("groundall without rules\n");
         return groundAll(model.getRules(), atomManager, groundRuleStore);
     }
 
@@ -90,7 +89,21 @@ public class Grounding {
      * @return the number of ground rules generated.
      */
     public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        System.out.println("The real groundall");
+        /** 
+         * Insert entry distributed grounding code here
+        */
+
+        if (DistributedGroundingUtil.isNodeRoleMaster()) {
+            log.info("Running Grounding as master node");
+            DistributedGroundingMasterThread t = new DistributedGroundingMasterThread();
+            t.start();
+        }
+        else {
+            log.info("Running Grounding as slave node");
+            DistributedGroundingWorkerThread t = new DistributedGroundingWorkerThread(DistributedGroundingUtil.masterNodeName);
+            t.start();
+        }
+
         boolean rewrite = Config.getBoolean(REWRITE_QUERY_KEY, REWRITE_QUERY_DEFAULT);
         boolean serial = Config.getBoolean(SERIAL_KEY, SERIAL_DEFAULT);
 
