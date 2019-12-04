@@ -41,8 +41,6 @@ public class DistributedGroundingUtil {
     public static boolean isNodeRoleMaster() {
         String hostname = SystemUtils.getHostname();
         log.info("Hostname is " + hostname);
-        System.out.println("Masternode name is " + masterNodeName);
-        System.out.println(slaveNodeNameList);
         if (hostname.equals(masterNodeName)) {
             isMaster = true;
         }

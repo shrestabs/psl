@@ -17,7 +17,30 @@
  */
 package org.linqs.psl.grounding.messages;
 
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+
+import java.util.List;
+import java.util.Map;
+
+
 public class ResponseMessage extends Message {
-    String messagename = "Response Message";
+    String messagename;
+    List <Constant[]> outQueryResult;
+    Map<Variable, Integer> outVariableMap;
+
+    public ResponseMessage() {
+        String messagename = "Response Message";
+     }
+
+     protected String serialize() {
+        String buffer= "";
+        message_type = (MessageType.RESPONSE).getValue();
+        return buffer;
+     }
+
+     protected void deserialize(String buffer) {    
+
+     }
     
 }

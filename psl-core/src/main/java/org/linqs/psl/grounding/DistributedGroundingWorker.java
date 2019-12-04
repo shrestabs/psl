@@ -20,20 +20,26 @@ package org.linqs.psl.grounding;
 import java.net.*;
 import java.io.*;
 
-public class DistributedGroundingWorkerThread extends Thread {
+import org.linqs.psl.grounding.messages.Message.MessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DistributedGroundingWorker {
+    private static final Logger log = LoggerFactory.getLogger(DistributedGroundingWorker.class);
     String serverName;
     final int port = 6066;
+    boolean done = false;
 
-    public DistributedGroundingWorkerThread(String masterNodeName) {
+    public DistributedGroundingWorker(String masterNodeName) {
         serverName = masterNodeName;
     }
 
     public void run() {
         try {
-            System.out.println("Connecting to " + serverName + " on port " + port);
+            log.info("Connecting to " + serverName + " on port " + port);
             Socket client = new Socket(serverName, port);
             
-            System.out.println("Just connected to " + client.getRemoteSocketAddress());
+            log.info("Just connected to " + client.getRemoteSocketAddress());
             OutputStream outToServer = client.getOutputStream();
             DataOutputStream out = new DataOutputStream(outToServer);
             
@@ -41,8 +47,22 @@ public class DistributedGroundingWorkerThread extends Thread {
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
             
-            System.out.println("Server says " + in.readUTF());
-            client.close();
+            while (!done) {
+                String buffer = in.readUTF();
+                log.debug("Worker received " + buffer);
+                if ((MessageType.DONE).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
+                    log.debug("Worker received " + buffer);
+                    client.close();
+                }
+                else if ((MessageType.QUERY).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
+                    log.debug("Worker received " + buffer);
+                    // Prepare query message
+                }
+                else {
+                    log.debug("Worker received " + buffer);w
+                    throw new IOException("Unknown message type");
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

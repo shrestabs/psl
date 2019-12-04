@@ -19,17 +19,19 @@ package org.linqs.psl.grounding;
 
 import java.net.*;
 import java.io.*;
+import java.nio.channels.Selector;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DistributedGroundingMasterThread extends Thread {
-    private static final Logger log = LoggerFactory.getLogger(DistributedGroundingMasterThread.class);
+public class DistributedGroundingMaster {
+    private static final Logger log = LoggerFactory.getLogger(DistributedGroundingMaster.class);
     private static boolean groundingStatus = true;
     private ServerSocket serverSocket;
     private final int port = 6066;
    
-    public DistributedGroundingMasterThread() {
+    public DistributedGroundingMaster() {
         try {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(10000);
@@ -47,11 +49,14 @@ public class DistributedGroundingMasterThread extends Thread {
         groundingStatus = status;
     }
 
-    public void run() {
+    public void run(int inRuleIndex, String inVariableName, List <String> inConstantValue) {
        while(groundingStatus) {
           try {
              log.info("Waiting for slaves on port " + 
                 serverSocket.getLocalPort() + " to come online...");
+            
+            Selector selector = Selector.open();
+            
              Socket server = serverSocket.accept();
              
              System.out.println("Just connected to " + server.getRemoteSocketAddress());

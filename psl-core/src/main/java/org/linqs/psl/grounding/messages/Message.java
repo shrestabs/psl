@@ -17,6 +17,29 @@
  */
 package org.linqs.psl.grounding.messages;
 
-public class Message {
+public abstract class Message {
+    public enum MessageType {
+        QUERY(1), 
+        RESPONSE(2), 
+        DONE(3);
     
+        private final int value;
+        private MessageType(int value) {
+            this.value = value;
+        }
+    
+        public int getValue() {
+            return value;
+        }
+    }
+    int message_type;
+    // ignore commmon fields like encoding
+    int message_size_length = 8; //TODO: fix size
+    int message_size;
+
+    // Serialize string to be passed on the wire
+    protected abstract String serialize();
+
+    // Deserialize buffer into the Message object
+    protected abstract void deserialize(String buffer);
 }
