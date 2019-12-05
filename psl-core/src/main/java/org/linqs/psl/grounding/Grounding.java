@@ -166,10 +166,12 @@ public class Grounding {
         boolean serial = Config.getBoolean(SERIAL_KEY, SERIAL_DEFAULT);
         int initialSize = groundRuleStore.size();
 
-        Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
         Map<Formula, List<Rule>> queries = new HashMap<Formula, List<Rule>>();
         List<Rule> bypassRules = new ArrayList<Rule>();
         List<Formula> queryList = new ArrayList<Formula>();
+
+        Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
+        Map<Term, List<String>> newPredicateConstants = new HashMap<Term, List<String>>();
 
         DataStore dataStore = atomManager.getDatabase().getDataStore();
         if (rewrite && !(dataStore instanceof RDBMSDataStore)) {
@@ -182,8 +184,7 @@ public class Grounding {
             rewriter = new QueryRewriter();
         }
 
-
-
+        int rule_index = 0;
         for (Rule rule : rules) {
             if (!rule.supportsGroundingQueryRewriting()) {
                 bypassRules.add(rule);
@@ -205,15 +206,15 @@ public class Grounding {
             Database database = atomManager.getDatabase();
             Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
             
-            predicateConstants = findTermConstant(database, atoms);
-            Term smallestTerm = findSmallestTerm(predicateConstants);
+            newPredicateConstants = newFindTermConstant(database, atoms);
+            Term smallestTerm = newFindSmallestTerm(newPredicateConstants);
+            String inVariableName = smallestTerm.toString();
 
+            List <Constant[]> outQueryResult = new ArrayList<Constant[]>();
+            Map<Variable, Integer> outVariableMap = new HashMap<Variable, Integer>();
 
-
-        /*
-            // Adding Shresta's part.
-            DistributedGroundAll (ruleIndex, String inVariableName, List <String> inConstantValue, List <Constant[]> outQueryResult, Map<Variable, Integer> outVariableMap) {
-            List<GroundRule> groundRules = new ArrayList<GroundRules>();
+            DistributedGroundAll (rule_index, inVariableName, newPredicateConstants, outQueryResult, outVariableMap);
+            List<GroundRule> groundRules = new ArrayList<GroundRule>();
             for (Constant [] row : outQueryResult) {
                 rule.ground(row, outVariableMap, atomManager, groundRules);
                 for (GroundRule groundRule : groundRules) {
@@ -222,9 +223,7 @@ public class Grounding {
                     }
                 }
                 groundRules.clear();
-
-            }    
-*/
+            }
             //LOOK AT EVERYTHING IN THIS FOR LOOP AS WELL AS GROUNDINGSUBQUERY FUNCTION. FOR SHRESTA
             for(Constant constant : predicateConstants.get(smallestTerm)) {
                 // Set<QueryAtom> queryAtoms = new HashSet<QueryAtom>();
@@ -276,8 +275,9 @@ public class Grounding {
 
                 List<Rule> tempRules = new ArrayList<Rule>();
                 tempRules.add(rule);
-//                groundingSubQuery(newQuery, tempRules, atomManager, groundRuleStore, constant, smallestTerm); 
+//              groundingSubQuery(newQuery, tempRules, atomManager, groundRuleStore, constant, smallestTerm); 
             }
+            rule_index = rule_index + 1;
         }
 
 
