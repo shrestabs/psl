@@ -58,6 +58,7 @@ import java.util.Set;
  * Static utilities for common {@link Model}-grounding tasks.
  */
 public class Grounding {
+    private static final boolean enableDistributedGrounding = true;
     private static final Logger log = LoggerFactory.getLogger(Grounding.class);
 
     public static final String CONFIG_PREFIX = "grounding";
@@ -98,195 +99,7 @@ public class Grounding {
 
         return groundCount;
     }
-    
-    /**
-     * Obtain a all the constant corresponding to the term.
-     * @return a HashMap of Term to Constant set. 
-     */
-    public static Map<Term, HashSet<Constant>> findTermConstant(Database database, Set<Atom> atoms) {
-        Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
-
-        for (Atom temp: atoms) {
-            System.out.println("Atom Arguments: " + temp.getArguments().getClass());
-            Predicate pred = temp.getPredicate();
-    
-            if(pred instanceof StandardPredicate){
-                System.out.println("Pred Class: " +pred.getClass());
-                List<ObservedAtom> groundObservedAtoms = database.getAllGroundObservedAtoms((StandardPredicate) pred);
-
-                for(ObservedAtom obsAtom : groundObservedAtoms){
-                    GroundAtom grAtom = (GroundAtom) obsAtom;
-                    Constant[] constants = obsAtom.getArguments();
-                    Term[] terms = temp.getArguments();
-                    for( int i = 0; i < constants.length; i++){
-                        Constant atom_constant = constants[i];
-                        Term atom_term = terms[i];
-                        
-                        // If the Hashmap doesn't have a term as the key add it to the Hashmap.
-                        if (!predicateConstants.containsKey(atom_term)) {
-                            predicateConstants.put(atom_term, new HashSet<Constant>());
-                        }
-                        predicateConstants.get(atom_term).add(atom_constant);
-                    }
-                }
-            }
-        }
-        return predicateConstants;
-    } 
-
-    /**
-     * Given a Hashmap of term to constant, find term with the smallest number of constants.
-     * @return the term with smallest number of constants
-     */
-    public static Term findSmallestTerm(Map<Term, HashSet<Constant>> termConstants) {
-        Term smallestTerm = null;
-        double numConstants = Double.POSITIVE_INFINITY;
-        for (Map.Entry<Term, HashSet<Constant>> entry : termConstants.entrySet()) {
-            Term termInQuestion = entry.getKey();
-            Set<Constant> constant = entry.getValue();
-            double constantSize = constant.size();
-        
-            if (constantSize < numConstants) {
-                numConstants = constantSize;
-                smallestTerm = termInQuestion;
-            } 
-        }
-        System.out.println("Num Constants: " + numConstants);
-        return smallestTerm;
-    }
-
-    public static Constant stringToConstant(String constant_string, String constantType) {
-
-        String constString = constant.rawToString();
-        Constant newConstant = ConstantType.getConstant(constString, constantType);
-        return newConstant
-    }
-
-    public void getQueryResult(Formula query, AtomManager atomManager, Constant constant, Term term){
-        QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
-        List<Constant[]> constList = new ArrayList<Constant[]>(); // You can probably just return this.
-
-        int rowLength = 1; 
-        for(Constant [] t : queryResults) {
-            rowLength = t.length;
-            Constant [] newRow = new Constant[rowLength + 1];
-            for(int i = 0; i < rowLength; i++) {
-                newRow[i] = t[i];
-            }
-            newRow[rowLength] = constant;
-
-            constList.add(newRow);
-            
-        }
-        Iterator<Constant[]> iter = constList.iterator(); // Array Constant []
-        
-        // Obtaining the variable mapping of variable to index (int) of constant []. Line (359 - 367) Creating the variable map
-        Map<Variable, Integer> queryVariableMap = queryResults.getVariableMap(); 
-        Map<Variable, Integer> newQueryVariableMap = new HashMap<Variable, Integer>(); // You can just return this to me.
-        
-        for (Map.Entry<Variable, Integer> variableMap : queryVariableMap.entrySet()) {
-            newQueryVariableMap.put(variableMap.getKey(), variableMap.getValue());
-        }                
-
-        newQueryVariableMap.put((Variable) term, new Integer(rowLength));
-
-    }
-  
-    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType){
-        // Converting the constant and term from string back to their respective object.
-        Constant constant = ConstantType.getConstant(constantString, constantType);    
-        Term term = new Variable(variable);
-
-        // TODO: Somehow find the list of rules.
-        Formula query = rules[ruleIndex].getRewritableGroundingFormula(atomManager);
-
-        Database database = atomManager.getDatabase();
-        Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
-
-        List<Formula> queryAtoms = new ArrayList<Formula>();
-        // Iterating through each atom in rule to variable to peg and create a new query. (252 - 284)
-        for (Atom atom : atoms) {
-            List<Term> terms = new ArrayList<Term>(); 
-            Term[] atom_terms = atom.getArguments();
-            Predicate predicate = atom.getPredicate();                   
-
-            for(Term term : atom_terms) {
-                // Splitting query with smallest term.
-                if(term.equals(smallestTerm)) {
-                    terms.add(constant);
-                } else {
-                    terms.add(term);
-                }
-
-            }
-            Term[] termArray = new Term[terms.size()]; 
-            termArray =  terms.toArray(termArray);
-            
-            QueryAtom queryAtom = new QueryAtom(predicate, termArray);
-            queryAtoms.add(queryAtom);
-        }
-        
-        
-        Formula[] queryArray = new Formula[queryAtoms.size()];
-        queryArray = queryAtoms.toArray(queryArray);
-        System.out.println("queryAtom Size: " + queryArray[0]);
-
-        Formula newQuery = queryArray[0];
-        // If rule only contains 1 QueryAtom, just add the queryAtom otherwise create a Conjunction and then add.
-        if(queryArray.length > 1) {
-            newQuery = new Conjunction(queryArray);
-            System.out.println(newQuery);
-        }
-    }
- 
-    public void orgainzeJobsForWorker(int ruleIndex, HashSet<Constant> constants, Term variable) {
-          String variableString = variable.toString();
-          for(Constant constant : constants) {
-              ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
-              String constantString = constant;
-           
-              workerFindQueryResult(ruleIndex, constantString, variableString);
-  //              groundingSubQuery(newQuery, tempRules, atomManager, groundRuleStore, constant, smallestTerm); 
-        }
-    }
-
-
-    public void groundDistributed(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        
-        Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
-        Map<Term, List<String>> newPredicateConstants = new HashMap<Term, List<String>>();
-        
-        int num_rules = rules.size()
-        // Obtaining the index of each rule list.
-        for (int rule_index = 0; rule_index < num_rules; rule_index++) {
-            Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
-
-            Database database = atomManager.getDatabase();
-            Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
-            
-            predicateConstants = findTermConstant(database, atoms);
-            Term smallestTerm = findSmallestTerm(predicateConstants);
-
-            List <Constant[]> outQueryResult = new ArrayList<Constant[]>();
-            Map<Variable, Integer> outVariableMap = new HashMap<Variable, Integer>();
-
-            DistributedGroundAll (rule_index, smallestTerm, predicateConstants.get(smallestTerm), outQueryResult, outVariableMap);
-            List<GroundRule> groundRules = new ArrayList<GroundRule>();
-            for (Constant [] row : outQueryResult) {
-                rule.ground(row, outVariableMap, atomManager, groundRules);
-                for (GroundRule groundRule : groundRules) {
-                    if (groundRule != null) {
-                        groundRuleStore.addGroundRule(groundRule);
-                    }
-                }
-                groundRules.clear();
-            }
-
-        }
-    }
-
-    
-
+   
 
     /**
      * Ground all the given rules.
@@ -327,24 +140,29 @@ public class Grounding {
             }
             queries.get(query).add(rule);
         }
-        // First perform all the rewritten querties.
-        for (Map.Entry<Formula, List<Rule>> entry : queries.entrySet()) {
-            if (!serial) {
-                // If parallel, ground all the rules that match this formula at once.
-                groundParallel(entry.getKey(), entry.getValue(), atomManager, groundRuleStore);
-            } else {
-                // If serial, ground the rules with this formula one at a time.
-                for (Rule rule : entry.getValue()) {
-                    List<Rule> tempRules = new ArrayList<Rule>();
-                    tempRules.add(rule);
 
-                    groundParallel(entry.getKey(), tempRules, atomManager, groundRuleStore);
+        if (enableDistributedGrounding) {
+            DistributedGroundingAPI.DistributedGroundAll(rules, atomManager, groundRuleStore);
+        }
+        else {
+            // First perform all the rewritten querties.
+            for (Map.Entry<Formula, List<Rule>> entry : queries.entrySet()) {
+                if (!serial) {
+                    // If parallel, ground all the rules that match this formula at once.
+                    groundParallel(entry.getKey(), entry.getValue(), atomManager, groundRuleStore);
+                } else {
+                    // If serial, ground the rules with this formula one at a time.
+                    for (Rule rule : entry.getValue()) {
+                        List<Rule> tempRules = new ArrayList<Rule>();
+                        tempRules.add(rule);
+
+                        groundParallel(entry.getKey(), tempRules, atomManager, groundRuleStore);
+                    }
                 }
             }
+            // Now ground the bypassed rules.
+            groundAllSerial(bypassRules, atomManager, groundRuleStore);
         }
-        // Now ground the bypassed rules.
-        groundAllSerial(bypassRules, atomManager, groundRuleStore);
-
         return groundRuleStore.size() - initialSize;
     }
 
@@ -452,7 +270,7 @@ public class Grounding {
             }
         }
     }
-    
+/*
     public static Map<Term, List<String>> newFindTermConstant(Database database, Set<Atom> atoms) {
         Map<Term, List<String>> predicateConstants = new HashMap<Term, List<String>>();
 
@@ -484,11 +302,13 @@ public class Grounding {
         }
         return predicateConstants;
     } 
+*/
 
     /**
      * Given a Hashmap of term to constant, find term with the smallest number of constants.
      * @return the term with smallest number of constants
      */
+/*
     public static Term newFindSmallestTerm(Map<Term, List<String>> termConstants) {
         Term smallestTerm = null;
         double numConstants = Double.POSITIVE_INFINITY;
@@ -505,5 +325,5 @@ public class Grounding {
         System.out.println("Num Constants: " + numConstants);
         return smallestTerm;
     }
-
+*/
 }

@@ -17,32 +17,67 @@
  */
 package org.linqs.psl.grounding;
 
-import java.util.List;
-import java.util.Map;
+//TODO: remove unnecessary imports
+import org.linqs.psl.config.Config;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.QueryResultIterable;
+import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.QueryRewriter;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.Model;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.Term;
+import org.linqs.psl.util.Parallel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.Integer;
 
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import java.net.*;
+import java.io.*;
+
+import org.linqs.psl.grounding.messages.Message.MessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedGroundingAPI {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingAPI.class);
 
-    public void DistributedGroundAll (int inRuleIndex, String inVariableName, List <String> inConstantValue, List <Constant[]> outQueryResult, Map<Variable, Integer> outVariableMap) {
+    public static void DistributedGroundAll (List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         /** 
          * Insert entry distributed grounding code here
         */
         if (DistributedGroundingUtil.isNodeRoleMaster()) {
             log.info("Running Grounding as master node");
             DistributedGroundingMaster t = new DistributedGroundingMaster();
-            t.run(inRuleIndex, inVariableName, inConstantValue);
+            t.run(rules, atomManager, groundRuleStore);
         }
         else {
             log.info("Running Grounding as slave node");
             DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME);
-            t.run(outQueryResult, outVariableMap);
+            t.run(rules, atomManager, groundRuleStore);
         }
         return;
     }

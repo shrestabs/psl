@@ -20,27 +20,74 @@ package org.linqs.psl.grounding.messages;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResponseMessage extends Message {
     String messagename;
-    List <Constant[]> outQueryResult;
-    Map<Variable, Integer> outVariableMap;
+    private static final Logger log = LoggerFactory.getLogger(DoneMessage.class);
+    List <String[]> outQueryResult; // List <Constant[]> outQueryResult;
+    Map<String, Integer> outVariableMap; //Map<Variable, Integer> outVariableMap;
 
     public ResponseMessage() {
         String messagename = "Response Message";
+        outQueryResult = new ArrayList<String[]>();
+        outVariableMap = new HashMap<String, Integer>();
      }
 
      protected String serialize() {
         String buffer= "";
         message_type = (MessageType.RESPONSE).getValue();
+        for (String[] arr : outQueryResult) {
+            for (String s: arr) {
+                buffer = buffer.concat(s + "\t");
+               }
+               buffer = buffer.concat("\t"); // double tab for new line
+            }
+        buffer = buffer.concat("\t"); // triple tab for new Data Struct
+        for (Map.Entry<String, Integer> entry : outVariableMap.entrySet())
+            buffer = buffer.concat(entry.getKey() + "\t" + entry.getValue() + "\t");
+
+        message_size = buffer.length();
+        buffer = Integer.toString(message_type) + String.format("%08d", message_size) + buffer;
         return buffer;
      }
 
-     protected void deserialize(String buffer) {    
+     protected void deserialize(String buffer) {
+        String strMessageType = buffer.substring(0, 1);
+        message_type = Integer.parseInt(strMessageType);
+        String strMessageSize = buffer.substring(1, 9);
+        message_size = Integer.parseInt(strMessageSize);
+        buffer = buffer.substring(9, 9 + message_size);
 
+        String[] dataStructs = buffer.split("\t\t\t");
+
+        // de-serialize list of String arrays
+        String[] lines = dataStructs[0].split("\t\t");
+        for (String s: lines) {
+            String[] word = s.split("\t");
+            outQueryResult.add(word);
+        }
+
+        for (String[] arr : outQueryResult) {
+            for (String s: arr) {
+                log.trace(s);
+           }
+        }
+
+        // de-serialize map
+        String[] keyvalues = dataStructs[1].split("\t"); // check even
+        for(int i = 0; i < keyvalues.length-1; i += 2) {
+            outVariableMap.put(keyvalues[i], Integer.parseInt(keyvalues[i+1]));
+        }
+
+        for (Map.Entry<String, Integer> entry : outVariableMap.entrySet())
+            log.trace(entry.getKey() + "\t" + entry.getValue() + "\t");
      }
     
 }

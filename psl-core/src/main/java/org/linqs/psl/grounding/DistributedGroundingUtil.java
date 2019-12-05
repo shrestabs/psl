@@ -17,6 +17,51 @@
  */
 package org.linqs.psl.grounding;
 
+//TODO: remove unnecessary imports
+import org.linqs.psl.config.Config;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.QueryResultIterable;
+import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.QueryRewriter;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.Model;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.Term;
+import org.linqs.psl.util.Parallel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.Integer;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -37,6 +82,11 @@ public class DistributedGroundingUtil {
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}
+
+    public static Constant stringToConstant(String constant_string, String constantType) {
+        Constant newConstant = ConstantType.getConstant(constant_string, constantType);
+        return newConstant;
+    }
 
     public static boolean isNodeRoleMaster() {
         String hostname = SystemUtils.getHostname();
