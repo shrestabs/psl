@@ -40,7 +40,7 @@ public class ResponseMessage extends Message {
         outVariableMap = new HashMap<String, Integer>();
      }
 
-     protected String serialize() {
+     public String serialize() {
         String buffer= "";
         message_type = (MessageType.RESPONSE).getValue();
         for (String[] arr : outQueryResult) {
@@ -58,7 +58,7 @@ public class ResponseMessage extends Message {
         return buffer;
      }
 
-     protected void deserialize(String buffer) {
+     public void deserialize(String buffer) {
         String strMessageType = buffer.substring(0, 1);
         message_type = Integer.parseInt(strMessageType);
         String strMessageSize = buffer.substring(1, 9);

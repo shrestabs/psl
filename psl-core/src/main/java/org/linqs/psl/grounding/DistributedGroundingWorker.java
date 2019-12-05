@@ -58,6 +58,8 @@ import java.util.Set;
 import java.net.*;
 import java.io.*;
 
+import org.linqs.psl.grounding.messages.QueryMessage;
+import org.linqs.psl.grounding.messages.ResponseMessage;
 import org.linqs.psl.grounding.messages.Message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,9 +69,15 @@ public class DistributedGroundingWorker {
     String serverName;
     final int port = 6066;
     boolean done = false;
+    List<Rule> rules;
+    AtomManager atomManager; 
+    GroundRuleStore groundRuleStore;
 
-    public DistributedGroundingWorker(String masterNodeName) {
-        serverName = masterNodeName;
+    public DistributedGroundingWorker(String masterNodeName, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        this.serverName = masterNodeName;
+        this.rules = rules;
+        this.atomManager = atomManager;
+        this.groundRuleStore = groundRuleStore;
     }
 
     public void getQueryResult(Formula query, AtomManager atomManager, Constant constant, Term term){
@@ -114,7 +122,7 @@ public class DistributedGroundingWorker {
         Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
 
         List<Formula> queryAtoms = new ArrayList<Formula>();
-        // Iterating through each atom in rule to variable to peg and create a new query. (252 - 284)
+        // Iterating through each atom in rule to variabsle to peg and create a new query. (252 - 284)
         for (Atom atom : atoms) {
             List<Term> terms = new ArrayList<Term>(); 
             Term[] atom_terms = atom.getArguments();
@@ -149,7 +157,7 @@ public class DistributedGroundingWorker {
         }
     }
 
-    public void run(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public void run() {
         try {
             log.info("Connecting to " + serverName + " on port " + port);
             Socket client = new Socket(serverName, port);
@@ -171,7 +179,15 @@ public class DistributedGroundingWorker {
                 }
                 else if ((MessageType.QUERY).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
                     log.debug("Worker received " + buffer);
-                    // Prepare query message
+                    QueryMessage queryMessage = new QueryMessage();
+                    ResponseMessage responseMessage = new ResponseMessage();
+                    queryMessage.deserialize(buffer);
+                    workerFindQueryResult(); // Jason: TODO
+                    getQueryResult(); // Jason: TODO
+                    // Prepare response message
+                    String newbuffer = responseMessage.serialize();
+                    out.writeUTF(newbuffer);
+
                 }
                 else {
                     log.debug("Worker received " + buffer);

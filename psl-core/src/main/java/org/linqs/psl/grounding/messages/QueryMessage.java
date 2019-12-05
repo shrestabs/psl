@@ -23,17 +23,17 @@ import org.slf4j.LoggerFactory;
 public class QueryMessage extends Message {
     private static final Logger log = LoggerFactory.getLogger(QueryMessage.class);
     String messagename = "Query Message";
-    int inRuleIndex;
-    String inVariableName;
-    String inConstantValue;
+    private int inRuleIndex;
+    public String inVariableName;
+    public String inConstantValue;
 
-    public QueryMessage(int inRuleIndex, String inVariableName, String inConstantValue) {
-        this.inRuleIndex = inRuleIndex;
-        this.inVariableName = inVariableName;
-        this.inConstantValue = inConstantValue;
+    public QueryMessage() {
+        this.inRuleIndex = 0;
+        this.inVariableName = "";
+        this.inConstantValue = "";
     }
 
-    protected String serialize() {
+    public String serialize() {
         String buffer;
         buffer = Integer.toString(this.inRuleIndex) + "," + this.inVariableName + "," + this.inConstantValue;
         message_size = buffer.length();
@@ -43,8 +43,7 @@ public class QueryMessage extends Message {
         return buffer;
     }
 
-    //TESTED
-    protected void deserialize(String buffer) {
+    public void deserialize(String buffer) {
         String strMessageType = buffer.substring(0, 1);
         message_type = Integer.parseInt(strMessageType);
         String strMessageSize = buffer.substring(1, 9);

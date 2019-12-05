@@ -73,8 +73,14 @@ public class DistributedGroundingMaster {
     private static boolean groundingStatus = true;
     private ServerSocket serverSocket;
     private final int port = 6066;
+    List<Rule> rules;
+    AtomManager atomManager; 
+    GroundRuleStore groundRuleStore;
    
-    public DistributedGroundingMaster() {
+    public DistributedGroundingMaster(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        this.rules = rules;
+        this.atomManager = atomManager;
+        this.groundRuleStore = groundRuleStore;
         try {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(10000);
@@ -149,13 +155,6 @@ public class DistributedGroundingMaster {
     }
 
     /*
-    public static void groundDistributed(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        
-
-    }
-    */
-
-    /*
      * Create a loop of constants that will be used for pegging 
     */
     public void orgainzeJobsForWorker(int ruleIndex, HashSet<Constant> constants, Term variable) {
@@ -170,7 +169,7 @@ public class DistributedGroundingMaster {
         }
     }
 
-    public void run(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public void run() {
        while(groundingStatus) {
           try {
              log.info("Waiting for slaves on port " + 
@@ -186,7 +185,7 @@ public class DistributedGroundingMaster {
              Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
              Map<Term, List<String>> newPredicateConstants = new HashMap<Term, List<String>>();
              
-             int num_rules = rules.size()
+             int num_rules = rules.size();
              // Obtaining the index of each rule list.
              for (int rule_index = 0; rule_index < num_rules; rule_index++) {
                  Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);

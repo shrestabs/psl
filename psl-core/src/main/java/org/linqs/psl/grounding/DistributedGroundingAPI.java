@@ -71,17 +71,16 @@ public class DistributedGroundingAPI {
         */
         if (DistributedGroundingUtil.isNodeRoleMaster()) {
             log.info("Running Grounding as master node");
-            DistributedGroundingMaster t = new DistributedGroundingMaster();
-            t.run(rules, atomManager, groundRuleStore);
+            DistributedGroundingMaster t = new DistributedGroundingMaster(rules, atomManager, groundRuleStore);
+            t.run();
         }
         else {
             log.info("Running Grounding as slave node");
-            DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME);
-            t.run(rules, atomManager, groundRuleStore);
+            DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, rules, atomManager, groundRuleStore);
+            t.run();
         }
         return;
     }
-
 }
 
 //TODO(shrbs): other functions to collect statistics 
