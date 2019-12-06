@@ -41,6 +41,23 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.util.Parallel;
+import org.netlib.util.booleanW;
+
+import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +67,7 @@ import java.lang.Integer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -73,21 +91,30 @@ import java.util.List;
 public class DistributedGroundingMaster {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingMaster.class);
     private static boolean groundingStatus = true;
+    private Selector selector;
+    private InetSocketAddress listenAddress;
     private ServerSocket serverSocket;
+    int worksConnected;
+    int totalWorkers;
     private final int port = 6066;
     List<Rule> rules;
+    boolean ruleNotDone;
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
-    //HashMap<String, Boolean> workerStatus = new HashMap<>(); 
+    HashMap<String, Boolean> workerStatus = new HashMap<>(); 
    
     public DistributedGroundingMaster(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
+        this.worksConnected = 0;
+        this.ruleNotDone = false;
+        this.totalWorkers = DistributedGroundingUtil.slaveNodeNameList.size();
+        listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
-        // for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
-        //     workerStatus.put(worker, false);
-        // }
+        for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
+            workerStatus.put(worker, false);
+        }
 
         try {
             serverSocket = new ServerSocket(port);
@@ -162,48 +189,162 @@ public class DistributedGroundingMaster {
         return smallestTerm;
     }
 
+    /*
+    * Finds the next free worker in the worker list 
+    */
+    private String findNextFreeWorker() {
+        Iterator<Map.Entry<String, Boolean>> itr = workerStatus.entrySet().iterator(); 
+        while (itr.hasNext()) {
+            Map.Entry<String, Boolean> entry = itr.next();
+            if (entry.getValue() == true)
+                return entry.getKey();
+        }
+        return "";
+    }
+
+    // accept client connection
+    private void accept(SelectionKey key) throws IOException {
+        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
+        SocketChannel channel = serverChannel.accept();
+        channel.configureBlocking(false);
+        Socket socket = channel.socket();
+        SocketAddress remoteAddr = socket.getRemoteSocketAddress();
+        System.out.println("Connected to: " + remoteAddr);
+        worksConnected = worksConnected + 1;
+
+        /*
+         * Register channel with selector for further IO (record it for read/write
+         * operations, here we have used read operation)
+         */
+        channel.register(this.selector, SelectionKey.OP_READ);
+    }
+
+    // write from the socket channel
+    private void write(SelectionKey key) throws IOException {
+
+    }
+
+    // read from the socket channel
+    private void read(SelectionKey key) throws IOException {
+        SocketChannel channel = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        int numRead = -1;
+        numRead = channel.read(buffer);
+        //create response message 
+
+        if (numRead == -1) {
+            Socket socket = channel.socket();
+            SocketAddress remoteAddr = socket.getRemoteSocketAddress();
+            System.out.println("Connection closed by client: " + remoteAddr);
+            channel.close();
+            key.cancel();
+            return;
+        }
+
+        byte[] data = new byte[numRead];
+        System.arraycopy(buffer.array(), 0, data, 0, numRead);
+        System.out.println("Got: " + new String(data));
+    }
+
+
+
     public void run() {
           try {
              log.info("Waiting for slaves on port " + 
                 serverSocket.getLocalPort() + " to come online...");
-            
-            Selector selector = Selector.open();
-             Socket server = serverSocket.accept();
-             
-             System.out.println("Just connected to " + server.getRemoteSocketAddress());
-             DataInputStream in = new DataInputStream(server.getInputStream());
-             
-             Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
-             Map<Term, List<String>> newPredicateConstants = new HashMap<Term, List<String>>();
-             
-             int num_rules = rules.size();
-             // Obtaining the index of each rule list.
-             for (int rule_index = 0; rule_index < num_rules; rule_index++) {
-                Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
-     
-                Database database = atomManager.getDatabase();
-                Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
 
-                predicateConstants = findTermConstant(database, atoms);
-                Term smallestTerm = findSmallestTerm(predicateConstants);
+            // Selector for server 
+            selector = Selector.open();
+            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.configureBlocking(false);
+            serverChannel.socket().bind(listenAddress);
+            serverChannel.register(this.selector, SelectionKey.OP_ACCEPT);
+            log.info("Server started on port >> " + 6066); //TODO: remove hardcode
 
-                String variableString = variable.toString();
-                for(Constant constant : constants) {
-                    QueryMessage queryMessage = new QueryMessage();
-                    queryMessage.inRuleIndex = rule_index;
-                    queryMessage.inVariableName = variableString;
-                    ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
-                    String constantString = constant;
-                    queryMessage.inConstantValue = constantString;
-                    String buffer = queryMessage.serialize();
+            // accept connections
+            while (worksConnected < totalWorkers) {
+                // wait for events
+                int readyCount = selector.select();
+                if (readyCount == 0) {
+                    continue;
+                }
+    
+                // process selected keys...
+                Set<SelectionKey> readyKeys = selector.selectedKeys();
+                Iterator iterator = readyKeys.iterator();
+                while (iterator.hasNext()) {
+                    SelectionKey key = (SelectionKey) iterator.next();
+    
+                    // Remove key from set so we don't process it twice
+                    iterator.remove();
+    
+                    if (!key.isValid()) {
+                        continue;
+                    }
+    
+                    if (key.isAcceptable()) { // Accept client connections
+                        this.accept(key);
+                    }
+                }
+            }
 
-                    workerFindQueryResult(ruleIndex, constantString, variableString);
-                System.out.println(in.readUTF());
-                // wait for all slaves
-                // done msg to all slaves
-                 //create message
-                 //DistributedGroundAll (rule_index, smallestTerm, predicateConstants.get(smallestTerm), outQueryResult, outVariableMap);
-                 List<GroundRule> groundRules = new ArrayList<GroundRule>();
+            log.info("All workers connected!");
+
+            int num_rules = rules.size();
+            // Obtaining the index of each rule list.
+            for (int rule_index = 0; rule_index < num_rules; rule_index++) {
+               Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
+    
+               Database database = atomManager.getDatabase();
+               Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
+
+               predicateConstants = findTermConstant(database, atoms);
+               Term smallestTerm = findSmallestTerm(predicateConstants);
+
+               String variableString = variable.toString();
+               int nextConstantToSend = 0;
+               int totalNumberOfConstants = //TODO:
+               int nextWorkerToSend = 0;
+                while (ruleNotDone) {
+                    // wait for responses events
+                    readyCount = selector.select();
+                    if (readyCount == 0) {
+                        continue;
+                    }
+                    // process selected keys...
+                    readyKeys = selector.selectedKeys();
+                    iterator = readyKeys.iterator();
+
+                    while (iterator.hasNext()) {
+                        SelectionKey key = (SelectionKey) iterator.next();
+        
+                        // Remove key from set so we don't process it twice
+                        iterator.remove();
+        
+                        if (!key.isValid()) {
+                            continue;
+                        }
+                        // if we got response message process it
+                        if (key.isReadable()) {
+                            this.read(key);
+                        }
+                    }
+                    String slaveNodeName = findNextFreeWorker();
+                    if (nextConstantToSend < totalNumberOfConstants) {
+                        // now attempt sending query messages
+                        QueryMessage queryMessage = new QueryMessage();
+                        queryMessage.inRuleIndex = rule_index;
+                        queryMessage.inVariableName = variableString;
+                        ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
+                        String constantString = constant;
+                        queryMessage.inConstantValue = constantString;
+                        String buffer = queryMessage.serialize();
+
+                        nextConstantToSend = nextConstantToSend + 1;
+                    }
+                } // while (ruleNotDone)
+
+                List<GroundRule> groundRules = new ArrayList<GroundRule>();
                 for (Constant [] row : outQueryResult) {
                     rule.ground(row, outVariableMap, atomManager, groundRules);
                     for (GroundRule groundRule : groundRules) {
@@ -213,18 +354,10 @@ public class DistributedGroundingMaster {
                     }
                     groundRules.clear();
                 }
-             }
-             DataOutputStream out = new DataOutputStream(server.getOutputStream());
-             out.writeUTF("Received all responses for all rules " + server.getLocalSocketAddress()
-                + "\nGoodbye!");
-             server.close();
-             
-          } catch (SocketTimeoutException s) {
-                System.out.println("Socket timed out!");
-                break;
-          } catch (IOException e) {
-                e.printStackTrace();
-             break;
-          }
+            } // for (int rule_index = 0; rule_index < num_rules; rule_index++)
+    
+        } catch (IOException e) {
+            e.printStackTrace();
+      }
     }
 }
