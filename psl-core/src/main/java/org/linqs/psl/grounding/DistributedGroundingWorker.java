@@ -80,9 +80,8 @@ public class DistributedGroundingWorker {
         this.groundRuleStore = groundRuleStore;
     }
 
-    public void getQueryResult(Formula query, AtomManager atomManager, Constant constant, Term term){
+    public void getQueryResult(Formula query, Constant constant, Term term, List<Constant[]>constList,  Map<Variable, Integer> newQueryVariableMap){
         QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
-        List<Constant[]> constList = new ArrayList<Constant[]>(); // You can probably just return this.
 
         int rowLength = 1; 
         for(Constant [] t : queryResults) {
@@ -98,9 +97,7 @@ public class DistributedGroundingWorker {
         }
         Iterator<Constant[]> iter = constList.iterator(); // Array Constant []
         
-        // Obtaining the variable mapping of variable to index (int) of constant []. Line (359 - 367) Creating the variable map
         Map<Variable, Integer> queryVariableMap = queryResults.getVariableMap(); 
-        Map<Variable, Integer> newQueryVariableMap = new HashMap<Variable, Integer>(); // You can just return this to me.
         
         for (Map.Entry<Variable, Integer> variableMap : queryVariableMap.entrySet()) {
             newQueryVariableMap.put(variableMap.getKey(), variableMap.getValue());
@@ -110,12 +107,11 @@ public class DistributedGroundingWorker {
     }
 
     /* For every constant in the const list, that needs to be pegged, generate query */
-    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType){
+    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType, List<Constant[]>constList,  Map<Variable, Integer> queryVariableMap){
         // Converting the constant and term from string back to their respective object.
         Constant constant = ConstantType.getConstant(constantString, "UniqueStringID");    
         Term term = new Variable(variable);
 
-        // TODO: Somehow find the list of rules.
         Formula query = rules[ruleIndex].getRewritableGroundingFormula(atomManager);
 
         Database database = atomManager.getDatabase();
@@ -155,6 +151,8 @@ public class DistributedGroundingWorker {
             newQuery = new Conjunction(queryArray);
             System.out.println(newQuery);
         }
+        getQueryResult(newQuery, constant, term, constList, queryVariableMap);
+
     }
 
     public void run() {
@@ -182,8 +180,15 @@ public class DistributedGroundingWorker {
                     QueryMessage queryMessage = new QueryMessage();
                     ResponseMessage responseMessage = new ResponseMessage();
                     queryMessage.deserialize(buffer);
-                    workerFindQueryResult(); // Jason: TODO
-                    getQueryResult(); // Jason: TODO
+                    int ruleIndex = queryMessage.inRuleIndex;
+                    String variable = queryMessage.inVariableName;
+                    String constant = queryMessage.inConstantValue;      
+
+
+                    List<Constant[]> constList = new ArrayList<Constant[]>(); // You can probably just return this.
+                    Map<Variable, Integer> queryVariableMap = new HashMap<Variable, Integer>();
+
+                    workerFindQueryResult(ruleIndex, constant, variable, constList, queryVariableMap); // Jason: TODO
                     // Prepare response message
                     String newbuffer = responseMessage.serialize();
                     out.writeUTF(newbuffer);
