@@ -191,14 +191,14 @@ public class DistributedGroundingWorker {
                 System.arraycopy(bytebuffer.array(), 0, data, 0, bytesRead);
                 String buffer = new String(data);
                 //String buffer = in.readUTF();
-                log.debug("Worker received " + buffer);
+                log.info("Worker received " + buffer);
                 if ((MessageType.DONE).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
                     done = true;
-                    log.debug("Worker received " + buffer);
+                    log.info("Worker received " + buffer);
                     master.close();
                 }
                 else if ((MessageType.QUERY).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
-                    log.debug("Worker received " + buffer);
+                    log.info("Worker received " + buffer);
                     QueryMessage queryMessage = new QueryMessage();
                     ResponseMessage responseMessage = new ResponseMessage();
                     queryMessage.deserialize(buffer);

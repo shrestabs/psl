@@ -342,6 +342,7 @@ public class DistributedGroundingMaster {
                         }
                         // if we got response message process it
                         if (key.isReadable()) {
+                            log.info("Got a response from worker");
                             ResponseMessage responseMessage = new ResponseMessage();
                             String buffer = this.read(key);
                             responseMessage.deserialize(buffer);
