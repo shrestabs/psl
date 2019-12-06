@@ -19,6 +19,7 @@ package org.linqs.psl.grounding;
 
 //TODO: remove unnecessary imports
 import org.linqs.psl.config.Config;
+import java.net.InetSocketAddress;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;
@@ -41,6 +42,9 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.util.Parallel;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,17 +70,25 @@ import org.slf4j.LoggerFactory;
 
 public class DistributedGroundingWorker {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingWorker.class);
-    String serverName;
+    //String serverName;
+    InetSocketAddress hostAddress;
+    SocketChannel master;
     boolean done = false;
     List<Rule> rules;
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
 
     public DistributedGroundingWorker(String masterNodeName, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        this.serverName = masterNodeName;
+        //this.serverName = masterNodeName;
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
+        hostAddress = new InetSocketAddress(masterNodeName, 9093);
+        try {
+            master = SocketChannel.open(hostAddress);
+        } catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     public void getQueryResult(Formula query, Constant constant, Term term, List<String[]>constList,  Map<String, Integer> newQueryVariableMap){
@@ -157,23 +169,28 @@ public class DistributedGroundingWorker {
 
     public void run() {
         try {
-            log.info("Connecting to " + serverName + " on port " + DistributedGroundingUtil.port);
-            Socket client = new Socket(serverName, DistributedGroundingUtil.port);
+            //log.info("Connecting to " + serverName + " on port " + DistributedGroundingUtil.port);
+            //Socket client = new Socket(serverName, DistributedGroundingUtil.port);
             
-            log.info("Just connected to " + client.getRemoteSocketAddress());
-            OutputStream outToServer = client.getOutputStream();
-            DataOutputStream out = new DataOutputStream(outToServer);
+            // log.info("Just connected to " + client.getRemoteSocketAddress());
+            // OutputStream outToServer = client.getOutputStream();
+            // DataOutputStream out = new DataOutputStream(outToServer);
             
-            out.writeUTF("Hello from " + client.getLocalSocketAddress());
-            InputStream inFromServer = client.getInputStream();
-            DataInputStream in = new DataInputStream(inFromServer);
+            // out.writeUTF("Hello from " + client.getLocalSocketAddress());
+            // InputStream inFromServer = client.getInputStream();
+            // DataInputStream in = new DataInputStream(inFromServer);
             
             while (!done) {
-                String buffer = in.readUTF();
+                ByteBuffer bytebuffer = ByteBuffer.allocate(480000);
+                int bytesRead = master.read(bytebuffer);
+                byte[] data = new byte[bytesRead];
+                System.arraycopy(bytebuffer.array(), 0, data, 0, bytesRead);
+                String buffer = new String(data);
+                //String buffer = in.readUTF();
                 log.debug("Worker received " + buffer);
                 if ((MessageType.DONE).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
                     log.debug("Worker received " + buffer);
-                    client.close();
+                    master.close();
                 }
                 else if ((MessageType.QUERY).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
                     log.debug("Worker received " + buffer);
@@ -186,8 +203,10 @@ public class DistributedGroundingWorker {
                     workerFindQueryResult(ruleIndex, constant, variable, responseMessage.outQueryResult, responseMessage.outVariableMap);
                     // Prepare response message
                     String newbuffer = responseMessage.serialize();
-                    out.writeUTF(newbuffer);
-
+                    ByteBuffer newbytebuffer = ByteBuffer.allocate(newbuffer.length());
+                    bytebuffer.put(newbuffer.getBytes());
+                    bytebuffer.flip();
+                    master.write(bytebuffer);
                 }
                 else {
                     log.debug("Worker received " + buffer);

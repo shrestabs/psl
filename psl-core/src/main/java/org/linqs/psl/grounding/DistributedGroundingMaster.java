@@ -266,7 +266,7 @@ public class DistributedGroundingMaster {
             serverChannel.socket().bind(listenAddress);
             log.info("Bind to listen address " + listenAddress);
             serverChannel.register(this.selector, SelectionKey.OP_ACCEPT);
-            log.info("Server started on port >> " + 6066); //TODO: remove hardcode
+            log.info("Role: Master, running on port " + 6066); //TODO: remove hardcode
 
             // accept connections
             while (worksConnected < totalWorkers) {
