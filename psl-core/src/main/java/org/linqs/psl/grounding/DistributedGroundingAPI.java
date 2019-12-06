@@ -76,7 +76,8 @@ public class DistributedGroundingAPI {
         }
         else {
             log.info("Running Grounding as slave node");
-            DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, rules, atomManager, groundRuleStore);
+            //DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, rules, atomManager, groundRuleStore);
+            DistributedGroundingWorker t = new DistributedGroundingWorker(DistributedGroundingUtil.masterNodeName, rules, atomManager, groundRuleStore);
             t.run();
         }
         return;
