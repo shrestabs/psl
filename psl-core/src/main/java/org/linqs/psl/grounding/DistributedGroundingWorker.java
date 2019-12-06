@@ -183,7 +183,7 @@ public class DistributedGroundingWorker {
             // InputStream inFromServer = client.getInputStream();
             // DataInputStream in = new DataInputStream(inFromServer);
 
-            log.info("Worker starting executipn");
+            log.info("Worker starting execution");
             while (!done) {
                 ByteBuffer bytebuffer = ByteBuffer.allocate(480000);
                 int bytesRead = master.read(bytebuffer);

@@ -322,6 +322,7 @@ public class DistributedGroundingMaster {
                System.out.println("totalNumberOfConstants = " + Integer.toString(totalNumberOfConstants));
                int nextWorkerToSend = 0;
                 while (ruleNotDone) {
+                    log.info("Rule not done");
                     // wait for responses events
                     int readyCount = selector.select();
                     if (readyCount == 0) {
