@@ -78,6 +78,7 @@ import java.nio.ByteBuffer;
  */
 public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
+    //public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     //public static String masterNodeName = "seacliff";
     public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";

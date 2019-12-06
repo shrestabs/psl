@@ -80,14 +80,16 @@ public class DistributedGroundingWorker {
 
     public DistributedGroundingWorker(String masterNodeName, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         //this.serverName = masterNodeName;
+        System.out.println("Connecting the worker to " + masterNodeName);
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
-        log.info("Connecting the worker to " + masterNodeName);
-        hostAddress = new InetSocketAddress(masterNodeName, 6066);
+        hostAddress = new InetSocketAddress(masterNodeName, DistributedGroundingUtil.port);
         try {
+            log.info("Connecting the worker to " + masterNodeName);
             master = SocketChannel.open(hostAddress);
         } catch (IOException e) {
+            log.error("Connecting the worker to " + masterNodeName);
 			e.printStackTrace();
 		}
     }
