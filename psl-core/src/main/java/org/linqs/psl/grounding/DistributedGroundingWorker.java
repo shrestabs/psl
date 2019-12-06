@@ -182,7 +182,8 @@ public class DistributedGroundingWorker {
             // out.writeUTF("Hello from " + client.getLocalSocketAddress());
             // InputStream inFromServer = client.getInputStream();
             // DataInputStream in = new DataInputStream(inFromServer);
-            
+
+            log.info("Worker starting executipn");
             while (!done) {
                 ByteBuffer bytebuffer = ByteBuffer.allocate(480000);
                 int bytesRead = master.read(bytebuffer);
@@ -192,6 +193,7 @@ public class DistributedGroundingWorker {
                 //String buffer = in.readUTF();
                 log.debug("Worker received " + buffer);
                 if ((MessageType.DONE).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
+                    done = true;
                     log.debug("Worker received " + buffer);
                     master.close();
                 }

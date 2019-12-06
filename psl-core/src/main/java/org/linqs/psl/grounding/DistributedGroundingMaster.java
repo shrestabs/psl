@@ -199,9 +199,12 @@ public class DistributedGroundingMaster {
         Iterator<Map.Entry<String, Boolean>> itr = workerStatus.entrySet().iterator(); 
         while (itr.hasNext()) {
             Map.Entry<String, Boolean> entry = itr.next();
-            if (entry.getValue() == true)
+            if (entry.getValue() == true) {
+                log.info("Next free worker " + entry.getKey());
                 return entry.getKey();
+            }
         }
+        log.error(" slave Not found");
         return "";
     }
 
@@ -316,6 +319,7 @@ public class DistributedGroundingMaster {
                String variableString = smallestTerm.toString();
                int nextConstantToSend = 0;
                int totalNumberOfConstants = constantList.size();
+               System.out.println("totalNumberOfConstants = " + Integer.toString(totalNumberOfConstants));
                int nextWorkerToSend = 0;
                 while (ruleNotDone) {
                     // wait for responses events
@@ -352,6 +356,8 @@ public class DistributedGroundingMaster {
                             }
                         }
                     }
+
+                    System.out.println("finding next free worker");
                     String slaveNodeName = findNextFreeWorker();
                     if (nextConstantToSend < totalNumberOfConstants) {
                         // now attempt sending query messages
@@ -361,6 +367,7 @@ public class DistributedGroundingMaster {
                         //ConstantType constantType = ConstantType.getType(constantList[]); // This should be a String to pass to worker.
                         String constantString = constantList.get(nextConstantToSend).rawToString();
                         queryMessage.inConstantValue = constantString;
+                        log.info("Sending sub-query " + constantString);
                         String buffer = queryMessage.serialize();
                         this.write(slaveNodeName, buffer);
                         nextConstantToSend = nextConstantToSend + 1;
