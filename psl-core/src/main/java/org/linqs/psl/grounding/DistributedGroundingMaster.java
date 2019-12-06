@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.Integer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -58,6 +59,7 @@ import java.util.Set;
 import java.net.*;
 import java.io.*;
 
+import org.linqs.psl.grounding.messages.QueryMessage;
 import org.linqs.psl.grounding.messages.Message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,11 +78,17 @@ public class DistributedGroundingMaster {
     List<Rule> rules;
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
+    //HashMap<String, Boolean> workerStatus = new HashMap<>(); 
    
     public DistributedGroundingMaster(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
+        //TODO figure which workers are online 
+        // for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
+        //     workerStatus.put(worker, false);
+        // }
+
         try {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(10000);
@@ -154,29 +162,12 @@ public class DistributedGroundingMaster {
         return smallestTerm;
     }
 
-    /*
-     * Create a loop of constants that will be used for pegging 
-    */
-    public void orgainzeJobsForWorker(int ruleIndex, HashSet<Constant> constants, Term variable) {
-        String variableString = variable.toString();
-        for(Constant constant : constants) {
-            ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
-            String constantString = constant;
-         
-            workerFindQueryResult(ruleIndex, constantString, variableString);
-            /* call send msg and serialize */ 
-            // groundingSubQuery(newQuery, tempRules, atomManager, groundRuleStore, constant, smallestTerm); 
-        }
-    }
-
     public void run() {
           try {
              log.info("Waiting for slaves on port " + 
                 serverSocket.getLocalPort() + " to come online...");
             
-            // event multiplxer 
             Selector selector = Selector.open();
-            
              Socket server = serverSocket.accept();
              
              System.out.println("Just connected to " + server.getRemoteSocketAddress());
@@ -188,37 +179,43 @@ public class DistributedGroundingMaster {
              int num_rules = rules.size();
              // Obtaining the index of each rule list.
              for (int rule_index = 0; rule_index < num_rules; rule_index++) {
-                 Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
+                Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
      
-                 Database database = atomManager.getDatabase();
-                 Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
-                 
-                 predicateConstants = findTermConstant(database, atoms);
-                 Term smallestTerm = findSmallestTerm(predicateConstants);
-     
-                 List <Constant[]> outQueryResult = new ArrayList<Constant[]>();
-                 Map<Variable, Integer> outVariableMap = new HashMap<Variable, Integer>();
-            // make indices  (i, list, variable)
-            orgainzeJobsForWorker(inRuleIndex, inVariableName, inConstantValue);
-            // make msg packet to slave i , list[j], var
-            System.out.println(in.readUTF());
-            // wait for all slaves
-            // done msg to all slaves
+                Database database = atomManager.getDatabase();
+                Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
+
+                predicateConstants = findTermConstant(database, atoms);
+                Term smallestTerm = findSmallestTerm(predicateConstants);
+
+                String variableString = variable.toString();
+                for(Constant constant : constants) {
+                    QueryMessage queryMessage = new QueryMessage();
+                    queryMessage.inRuleIndex = rule_index;
+                    queryMessage.inVariableName = variableString;
+                    ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
+                    String constantString = constant;
+                    queryMessage.inConstantValue = constantString;
+                    String buffer = queryMessage.serialize();
+
+                    workerFindQueryResult(ruleIndex, constantString, variableString);
+                System.out.println(in.readUTF());
+                // wait for all slaves
+                // done msg to all slaves
                  //create message
                  //DistributedGroundAll (rule_index, smallestTerm, predicateConstants.get(smallestTerm), outQueryResult, outVariableMap);
                  List<GroundRule> groundRules = new ArrayList<GroundRule>();
-                 for (Constant [] row : outQueryResult) {
-                     rule.ground(row, outVariableMap, atomManager, groundRules);
-                     for (GroundRule groundRule : groundRules) {
-                         if (groundRule != null) {
-                             groundRuleStore.addGroundRule(groundRule);
-                         }
-                     }
-                     groundRules.clear();
-                 }
+                for (Constant [] row : outQueryResult) {
+                    rule.ground(row, outVariableMap, atomManager, groundRules);
+                    for (GroundRule groundRule : groundRules) {
+                        if (groundRule != null) {
+                            groundRuleStore.addGroundRule(groundRule);
+                        }
+                    }
+                    groundRules.clear();
+                }
              }
              DataOutputStream out = new DataOutputStream(server.getOutputStream());
-             out.writeUTF("Thank you for connecting to " + server.getLocalSocketAddress()
+             out.writeUTF("Received all responses for all rules " + server.getLocalSocketAddress()
                 + "\nGoodbye!");
              server.close();
              

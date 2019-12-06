@@ -67,7 +67,6 @@ import org.slf4j.LoggerFactory;
 public class DistributedGroundingWorker {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingWorker.class);
     String serverName;
-    final int port = 6066;
     boolean done = false;
     List<Rule> rules;
     AtomManager atomManager; 
@@ -157,8 +156,8 @@ public class DistributedGroundingWorker {
 
     public void run() {
         try {
-            log.info("Connecting to " + serverName + " on port " + port);
-            Socket client = new Socket(serverName, port);
+            log.info("Connecting to " + serverName + " on port " + DistributedGroundingUtil.port);
+            Socket client = new Socket(serverName, DistributedGroundingUtil.port);
             
             log.info("Just connected to " + client.getRemoteSocketAddress());
             OutputStream outToServer = client.getOutputStream();

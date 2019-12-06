@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class QueryMessage extends Message {
     private static final Logger log = LoggerFactory.getLogger(QueryMessage.class);
     String messagename = "Query Message";
-    private int inRuleIndex;
+    public int inRuleIndex;
     public String inVariableName;
     public String inConstantValue;
 

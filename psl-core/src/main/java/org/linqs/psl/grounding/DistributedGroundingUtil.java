@@ -54,6 +54,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.io.UnsupportedEncodingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.NoSuchFieldException;
 import java.util.Arrays;
 import java.util.List;
+import java.nio.ByteBuffer;
 
 /**
  * Determine the role of the node.
@@ -78,6 +80,7 @@ public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     public static String masterNodeName = "seacliff";
+    final static int port = 6066;
     public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "information-cast.local");
     public static boolean isMaster = false;
 
@@ -86,6 +89,14 @@ public class DistributedGroundingUtil {
     public static Constant stringToConstant(String constant_string, String constantType) {
         Constant newConstant = ConstantType.getConstant(constant_string, constantType);
         return newConstant;
+    }
+
+    public static ByteBuffer stringToByteBuffer (String stringBuffer) throws UnsupportedEncodingException {
+        return ByteBuffer.wrap(stringBuffer.getBytes("UTF-8"));
+    }
+
+    public static String ByteBufferToString (ByteBuffer byteBuffer) throws UnsupportedEncodingException {
+        return new String(byteBuffer.array(), "UTF-8");
     }
 
     public static boolean isNodeRoleMaster() {
