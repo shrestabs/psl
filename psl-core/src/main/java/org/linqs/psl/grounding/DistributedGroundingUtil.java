@@ -86,7 +86,7 @@ public class DistributedGroundingUtil {
 
     private DistributedGroundingUtil() {}
 
-    public static Constant stringToConstant(String constant_string, String constantType) {
+    public static Constant stringToConstant(String constant_string, ConstantType constantType) {
         Constant newConstant = ConstantType.getConstant(constant_string, constantType);
         return newConstant;
     }
