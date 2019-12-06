@@ -79,17 +79,17 @@ public class DistributedGroundingWorker {
         this.groundRuleStore = groundRuleStore;
     }
 
-    public void getQueryResult(Formula query, Constant constant, Term term, List<Constant[]>constList,  Map<Variable, Integer> newQueryVariableMap){
+    public void getQueryResult(Formula query, Constant constant, Term term, List<String[]>constList,  Map<String, Integer> newQueryVariableMap){
         QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
 
         int rowLength = 1; 
         for(Constant [] t : queryResults) {
             rowLength = t.length;
-            Constant [] newRow = new Constant[rowLength + 1];
+            String[] newRow = new String[rowLength + 1];
             for(int i = 0; i < rowLength; i++) {
-                newRow[i] = t[i];
+                newRow[i] = t[i].rawToString();
             }
-            newRow[rowLength] = constant;
+            newRow[rowLength] = constant.rawToString;
 
             constList.add(newRow);
             
@@ -99,10 +99,10 @@ public class DistributedGroundingWorker {
         Map<Variable, Integer> queryVariableMap = queryResults.getVariableMap(); 
         
         for (Map.Entry<Variable, Integer> variableMap : queryVariableMap.entrySet()) {
-            newQueryVariableMap.put(variableMap.getKey(), variableMap.getValue());
+            newQueryVariableMap.put(variableMap.getKey().rawToString(), variableMap.getValue());
         }                
 
-        newQueryVariableMap.put((Variable) term, new Integer(rowLength));
+        newQueryVariableMap.put(term.toString(), new Integer(rowLength));
     }
 
     /* For every constant in the const list, that needs to be pegged, generate query */
