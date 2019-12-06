@@ -107,7 +107,7 @@ public class DistributedGroundingWorker {
     }
 
     /* For every constant in the const list, that needs to be pegged, generate query */
-    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType, List<Constant[]>constList,  Map<Variable, Integer> queryVariableMap){
+    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType, List<String[]>constList,  Map<String, Integer> queryVariableMap){
         // Converting the constant and term from string back to their respective object.
         Constant constant = ConstantType.getConstant(constantString, "UniqueStringID");    
         Term term = new Variable(variable);
@@ -182,13 +182,8 @@ public class DistributedGroundingWorker {
                     queryMessage.deserialize(buffer);
                     int ruleIndex = queryMessage.inRuleIndex;
                     String variable = queryMessage.inVariableName;
-                    String constant = queryMessage.inConstantValue;      
-
-
-                    List<Constant[]> constList = new ArrayList<Constant[]>(); // You can probably just return this.
-                    Map<Variable, Integer> queryVariableMap = new HashMap<Variable, Integer>();
-
-                    workerFindQueryResult(ruleIndex, constant, variable, constList, queryVariableMap); // Jason: TODO
+                    String constant = queryMessage.inConstantValue;
+                    workerFindQueryResult(ruleIndex, constant, variable, responseMessage.outVariableMap, responseMessage.outQueryResult);
                     // Prepare response message
                     String newbuffer = responseMessage.serialize();
                     out.writeUTF(newbuffer);

@@ -170,11 +170,11 @@ public class DistributedGroundingMaster {
     }
 
     public void run() {
-       while(groundingStatus) {
           try {
              log.info("Waiting for slaves on port " + 
                 serverSocket.getLocalPort() + " to come online...");
             
+            // event multiplxer 
             Selector selector = Selector.open();
             
              Socket server = serverSocket.accept();
@@ -229,6 +229,5 @@ public class DistributedGroundingMaster {
                 e.printStackTrace();
              break;
           }
-       }
     }
 }
