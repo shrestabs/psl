@@ -83,7 +83,8 @@ public class DistributedGroundingWorker {
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
-        hostAddress = new InetSocketAddress(masterNodeName, 9093);
+        log.info("Connecting the worker to " + masterNodeName);
+        hostAddress = new InetSocketAddress(masterNodeName, 6066);
         try {
             master = SocketChannel.open(hostAddress);
         } catch (IOException e) {
