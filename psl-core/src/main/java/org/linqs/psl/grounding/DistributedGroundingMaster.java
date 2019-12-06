@@ -78,6 +78,7 @@ import java.net.*;
 import java.io.*;
 
 import org.linqs.psl.grounding.messages.QueryMessage;
+import org.linqs.psl.grounding.messages.ResponseMessage;
 import org.linqs.psl.grounding.messages.Message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,13 +103,14 @@ public class DistributedGroundingMaster {
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
     HashMap<String, Boolean> workerStatus = new HashMap<>(); 
+    Map<Variable, Integer> goldStandardOutVariableMap = new HashMap <Variable,Integer>();
    
     public DistributedGroundingMaster(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         this.rules = rules;
         this.atomManager = atomManager;
         this.groundRuleStore = groundRuleStore;
         this.worksConnected = 0;
-        this.ruleNotDone = false;
+        this.ruleNotDone = true;
         this.totalWorkers = DistributedGroundingUtil.slaveNodeNameList.size();
         listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
@@ -118,7 +120,7 @@ public class DistributedGroundingMaster {
 
         try {
             serverSocket = new ServerSocket(port);
-            serverSocket.setSoTimeout(10000);
+            //serverSocket.setSoTimeout(10000);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -220,14 +222,19 @@ public class DistributedGroundingMaster {
     }
 
     // write from the socket channel
-    private void write(SelectionKey key) throws IOException {
-
+    private void write(String slaveNodeName, String stringbuffer) throws IOException {
+        InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName + DistributedGroundingUtil.DOMAIN_NAME, 6066);
+        SocketChannel worker = SocketChannel.open(hostAddress);
+        ByteBuffer bytebuffer = ByteBuffer.allocate(stringbuffer.length());
+        bytebuffer.put(stringbuffer.getBytes());
+        bytebuffer.flip();
+        worker.write(bytebuffer);
     }
 
     // read from the socket channel
-    private void read(SelectionKey key) throws IOException {
+    private String read(SelectionKey key) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        ByteBuffer buffer = ByteBuffer.allocate(1024000);
         int numRead = -1;
         numRead = channel.read(buffer);
         //create response message 
@@ -238,21 +245,19 @@ public class DistributedGroundingMaster {
             System.out.println("Connection closed by client: " + remoteAddr);
             channel.close();
             key.cancel();
-            return;
+            return "";
         }
 
         byte[] data = new byte[numRead];
         System.arraycopy(buffer.array(), 0, data, 0, numRead);
-        System.out.println("Got: " + new String(data));
+        return new String(data);
     }
 
 
 
     public void run() {
           try {
-             log.info("Waiting for slaves on port " + 
-                serverSocket.getLocalPort() + " to come online...");
-
+             log.info("Waiting for slaves on port " + serverSocket.getLocalPort() + " to come online...");
             // Selector for server 
             selector = Selector.open();
             ServerSocketChannel serverChannel = ServerSocketChannel.open();
@@ -293,27 +298,32 @@ public class DistributedGroundingMaster {
             int num_rules = rules.size();
             // Obtaining the index of each rule list.
             for (int rule_index = 0; rule_index < num_rules; rule_index++) {
-               Formula query = rules[rule_index].getRewritableGroundingFormula(atomManager);
-    
+               Formula query = rules.get(rule_index).getRewritableGroundingFormula(atomManager);
                Database database = atomManager.getDatabase();
                Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
-
+               Map<Term, HashSet<Constant>> predicateConstants = new HashMap<Term, HashSet<Constant>>();
                predicateConstants = findTermConstant(database, atoms);
                Term smallestTerm = findSmallestTerm(predicateConstants);
+                HashSet<Constant> constantSet = new HashSet<Constant>();
+                constantSet = predicateConstants.get(smallestTerm);
+                List<Constant> constantList = new ArrayList<Constant>(constantSet); 
 
-               String variableString = variable.toString();
+                List <Constant []> outQueryResult = new ArrayList<Constant []>();
+                Map<Variable, Integer> outVariableMap = new HashMap <Variable,Integer>();
+
+               String variableString = smallestTerm.toString();
                int nextConstantToSend = 0;
-               int totalNumberOfConstants = //TODO:
+               int totalNumberOfConstants = constantList.size();
                int nextWorkerToSend = 0;
                 while (ruleNotDone) {
                     // wait for responses events
-                    readyCount = selector.select();
+                    int readyCount = selector.select();
                     if (readyCount == 0) {
                         continue;
                     }
                     // process selected keys...
-                    readyKeys = selector.selectedKeys();
-                    iterator = readyKeys.iterator();
+                    Set<SelectionKey>  readyKeys = selector.selectedKeys();
+                    Iterator iterator = readyKeys.iterator();
 
                     while (iterator.hasNext()) {
                         SelectionKey key = (SelectionKey) iterator.next();
@@ -326,7 +336,18 @@ public class DistributedGroundingMaster {
                         }
                         // if we got response message process it
                         if (key.isReadable()) {
-                            this.read(key);
+                            ResponseMessage responseMessage = new ResponseMessage();
+                            String buffer = this.read(key);
+                            responseMessage.deserialize(buffer);
+                            Map<Variable, Integer> workerOutVariableMap = DistributedGroundingUtil.stringMapToVariableMap(responseMessage.outVariableMap);
+                            if (goldStandardOutVariableMap.isEmpty()) {
+                                goldStandardOutVariableMap = workerOutVariableMap;
+                            }
+                            List<String []> reorderedOutQueryResult = DistributedGroundingUtil.reorderArray(goldStandardOutVariableMap, workerOutVariableMap, responseMessage.outQueryResult);
+
+                            for (String [] item : reorderedOutQueryResult) {
+                                outQueryResult.add(DistributedGroundingUtil.stringArrayToConstant(item));
+                            }
                         }
                     }
                     String slaveNodeName = findNextFreeWorker();
@@ -335,18 +356,21 @@ public class DistributedGroundingMaster {
                         QueryMessage queryMessage = new QueryMessage();
                         queryMessage.inRuleIndex = rule_index;
                         queryMessage.inVariableName = variableString;
-                        ConstantType constantType = ConstantType.getType(constant); // This should be a String to pass to worker.
-                        String constantString = constant;
+                        //ConstantType constantType = ConstantType.getType(constantList[]); // This should be a String to pass to worker.
+                        String constantString = constantList.get(nextConstantToSend).rawToString();
                         queryMessage.inConstantValue = constantString;
                         String buffer = queryMessage.serialize();
-
+                        this.write(slaveNodeName, buffer);
                         nextConstantToSend = nextConstantToSend + 1;
+                    }
+                    if (nextConstantToSend >= totalNumberOfConstants) {
+                        ruleNotDone = false;
                     }
                 } // while (ruleNotDone)
 
                 List<GroundRule> groundRules = new ArrayList<GroundRule>();
                 for (Constant [] row : outQueryResult) {
-                    rule.ground(row, outVariableMap, atomManager, groundRules);
+                    rules.get(rule_index).ground(row, goldStandardOutVariableMap, atomManager, groundRules);
                     for (GroundRule groundRule : groundRules) {
                         if (groundRule != null) {
                             groundRuleStore.addGroundRule(groundRule);
@@ -354,6 +378,8 @@ public class DistributedGroundingMaster {
                     }
                     groundRules.clear();
                 }
+                goldStandardOutVariableMap.clear();
+
             } // for (int rule_index = 0; rule_index < num_rules; rule_index++)
     
         } catch (IOException e) {

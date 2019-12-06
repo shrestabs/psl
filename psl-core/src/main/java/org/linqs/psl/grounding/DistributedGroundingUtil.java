@@ -86,9 +86,30 @@ public class DistributedGroundingUtil {
 
     private DistributedGroundingUtil() {}
 
-    public static Constant stringToConstant(String constant_string, ConstantType constantType) {
-        Constant newConstant = ConstantType.getConstant(constant_string, constantType);
+    public static Constant stringToConstant(String constant_string) {
+        Constant newConstant = ConstantType.getConstant(constant_string, ConstantType.UniqueStringID);
         return newConstant;
+    }
+
+    public static Map<Variable, Integer> stringMapToVariableMap(Map<String, Integer> outMap) {
+        Map<Variable, Integer> outVariableMap = new HashMap<Variable, Integer>();
+        for(Map.Entry<String, Integer> varMap : outMap.entrySet()) {
+            String key = varMap.getKey();
+            int value = varMap.getValue();
+            Variable varTerm = new Variable(key);
+            outVariableMap.put(varTerm, value);
+        }
+        return outVariableMap;
+    }
+
+    public static Constant[] stringArrayToConstant(String [] stringConstant) {
+        int stringArrayLength = stringConstant.length;
+        Constant[] constArray = new Constant[stringArrayLength];
+        for(int i = 0; i < stringArrayLength; i++) {
+            String constantString = stringConstant[i];
+            constArray[i] = stringToConstant(constantString);
+        }
+        return constArray;
     }
 
     public static ByteBuffer stringToByteBuffer (String stringBuffer) throws UnsupportedEncodingException {
@@ -120,7 +141,7 @@ public class DistributedGroundingUtil {
     /*
      *If the two maps aren't the same, reorder the array based on varMap1.
     */
-    public static List<String []> reorderArray(Map<String, Integer> varMap1, Map<String, Integer> varMap2, List<String[]>constList) {
+    public static List<String []> reorderArray(Map<Variable, Integer> varMap1, Map<Variable, Integer> varMap2, List<String[]>constList) {
         if(varMap1.equals(varMap2)) {
             return constList;
         } 
@@ -129,8 +150,8 @@ public class DistributedGroundingUtil {
             int rowLength = constantStringArray.length;
             String[] row = new String[rowLength];
 
-            for(Map.Entry<String, Integer> varMap : varMap1.entrySet()) {
-                String key = varMap.getKey();
+            for(Map.Entry<Variable, Integer> varMap : varMap1.entrySet()) {
+                Variable key = varMap.getKey();
                 int value = varMap.getValue();
 
                 row[value] = constantStringArray[varMap2.get(key)];
