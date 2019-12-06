@@ -117,4 +117,29 @@ public class DistributedGroundingUtil {
         }
         return isMaster;
     }
+    /*
+     *If the two maps aren't the same, reorder the array based on varMap1.
+    */
+    public static List<String []> reorderArray(Map<String, Integer> varMap1, Map<String, Integer> varMap2, List<String[]>constList) {
+        if(varMap1.equals(varMap2)) {
+            return constList;
+        } 
+        List<String[]> newConstantList = new ArrayList<String[]>();
+        for(String[] constantStringArray : constList) {
+            int rowLength = constantStringArray.length;
+            String[] row = new String[rowLength];
+
+            for(Map.Entry<String, Integer> varMap : varMap1.entrySet()) {
+                String key = varMap.getKey();
+                int value = varMap.getValue();
+
+                row[value] = constantStringArray[varMap2.get(key)];
+            }
+            newConstantList.add(row);
+
+        } 
+        return newConstantList;      
+
+    }
+
 }
