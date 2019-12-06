@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 public class ResponseMessage extends Message {
     String messagename;
     private static final Logger log = LoggerFactory.getLogger(DoneMessage.class);
-    List <String[]> outQueryResult; // List <Constant[]> outQueryResult;
-    Map<String, Integer> outVariableMap; //Map<Variable, Integer> outVariableMap;
+    public List <String[]> outQueryResult; // List <Constant[]> outQueryResult;
+    public Map<String, Integer> outVariableMap; //Map<Variable, Integer> outVariableMap;
 
     public ResponseMessage() {
         String messagename = "Response Message";

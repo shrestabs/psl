@@ -89,29 +89,30 @@ public class DistributedGroundingWorker {
             for(int i = 0; i < rowLength; i++) {
                 newRow[i] = t[i].rawToString();
             }
-            newRow[rowLength] = constant.rawToString;
+            newRow[rowLength] = constant.rawToString();
 
             constList.add(newRow);
             
         }
-        Iterator<Constant[]> iter = constList.iterator(); // Array Constant []
+        // Iterator<Constant[]> iter = constList.iterator(); // Array Constant []
         
         Map<Variable, Integer> queryVariableMap = queryResults.getVariableMap(); 
         
         for (Map.Entry<Variable, Integer> variableMap : queryVariableMap.entrySet()) {
-            newQueryVariableMap.put(variableMap.getKey().rawToString(), variableMap.getValue());
+            newQueryVariableMap.put(variableMap.getKey().toString(), variableMap.getValue());
         }                
 
         newQueryVariableMap.put(term.toString(), new Integer(rowLength));
     }
 
-    /* For every constant in the const list, that needs to be pegged, generate query */
-    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, String constantType, List<String[]>constList,  Map<String, Integer> queryVariableMap){
+    /* For every constant in the const list, that needs to be pegged, generate query  */
+    // TODO JASON: Add String ConstantType as a input parameter.
+    public void workerFindQueryResult(int ruleIndex, String constantString, String variable, List<String[]>constList,  Map<String, Integer> queryVariableMap){
         // Converting the constant and term from string back to their respective object.
-        Constant constant = ConstantType.getConstant(constantString, "UniqueStringID");    
-        Term term = new Variable(variable);
+        Constant constant = ConstantType.getConstant(constantString, ConstantType.UniqueStringID);    
+        Term varTerm = new Variable(variable);
 
-        Formula query = rules[ruleIndex].getRewritableGroundingFormula(atomManager);
+        Formula query = rules.get(ruleIndex).getRewritableGroundingFormula(atomManager);
 
         Database database = atomManager.getDatabase();
         Set<Atom> atoms = query.getAtoms(new HashSet<Atom>());
@@ -125,7 +126,7 @@ public class DistributedGroundingWorker {
 
             for(Term term : atom_terms) {
                 // Splitting query with smallest term.
-                if(term.equals(smallestTerm)) {
+                if(term.equals(varTerm)) {
                     terms.add(constant);
                 } else {
                     terms.add(term);
@@ -150,7 +151,7 @@ public class DistributedGroundingWorker {
             newQuery = new Conjunction(queryArray);
             System.out.println(newQuery);
         }
-        getQueryResult(newQuery, constant, term, constList, queryVariableMap);
+        getQueryResult(newQuery, constant, varTerm, constList, queryVariableMap);
 
     }
 
@@ -182,7 +183,7 @@ public class DistributedGroundingWorker {
                     int ruleIndex = queryMessage.inRuleIndex;
                     String variable = queryMessage.inVariableName;
                     String constant = queryMessage.inConstantValue;
-                    workerFindQueryResult(ruleIndex, constant, variable, responseMessage.outVariableMap, responseMessage.outQueryResult);
+                    workerFindQueryResult(ruleIndex, constant, variable, responseMessage.outQueryResult, responseMessage.outVariableMap);
                     // Prepare response message
                     String newbuffer = responseMessage.serialize();
                     out.writeUTF(newbuffer);
