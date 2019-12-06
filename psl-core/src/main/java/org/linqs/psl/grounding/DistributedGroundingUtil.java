@@ -79,9 +79,10 @@ import java.nio.ByteBuffer;
 public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
-    public static String masterNodeName = "seacliff";
+    //public static String masterNodeName = "seacliff";
+    public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";
     final static int port = 6066;
-    public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "information-cast.local");
+    public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}

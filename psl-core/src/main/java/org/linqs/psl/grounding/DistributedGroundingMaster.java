@@ -94,7 +94,7 @@ public class DistributedGroundingMaster {
     private static boolean groundingStatus = true;
     private Selector selector;
     private InetSocketAddress listenAddress;
-    private ServerSocket serverSocket;
+    //private ServerSocket serverSocket;
     int worksConnected;
     int totalWorkers;
     private final int port = 6066;
@@ -112,19 +112,20 @@ public class DistributedGroundingMaster {
         this.worksConnected = 0;
         this.ruleNotDone = true;
         this.totalWorkers = DistributedGroundingUtil.slaveNodeNameList.size();
-        listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
+        listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName, DistributedGroundingUtil.port);
+        //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
         for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
             workerStatus.put(worker, false);
         }
 
-        try {
-            serverSocket = new ServerSocket(port);
-            //serverSocket.setSoTimeout(10000);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        // try {
+        //     serverSocket = new ServerSocket(port);
+        //     //serverSocket.setSoTimeout(10000);
+        // }
+        // catch (IOException e) {
+        //     e.printStackTrace();
+        // }
     }
 
     public static boolean getGroundingStatus () {
@@ -257,12 +258,13 @@ public class DistributedGroundingMaster {
 
     public void run() {
           try {
-             log.info("Waiting for slaves on port " + serverSocket.getLocalPort() + " to come online...");
+             //log.info("Waiting for slaves on port " + serverSocket.getLocalPort() + " to come online...");
             // Selector for server 
-            selector = Selector.open();
+            this.selector = Selector.open();
             ServerSocketChannel serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
             serverChannel.socket().bind(listenAddress);
+            log.info("Bind to listen address " + listenAddress);
             serverChannel.register(this.selector, SelectionKey.OP_ACCEPT);
             log.info("Server started on port >> " + 6066); //TODO: remove hardcode
 
