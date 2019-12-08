@@ -81,9 +81,10 @@ public class DistributedGroundingUtil {
     //public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     //public static String masterNodeName = "seacliff";
-    public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";
+    public static String masterNodeName = "seacliff.soe.ucsc.edu";
     final static int port = 6066;
-    public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
+    //public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
+    public static List<String> slaveNodeNameList = Arrays.asList("sunset.soe.ucsc.edu");
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}
