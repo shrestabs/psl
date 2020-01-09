@@ -80,10 +80,11 @@ public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
     //public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
-    //public static String masterNodeName = "seacliff";
-    public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";
+    public static String masterNodeName = "sunset";
+    //public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";
     final static int port = 6066;
-    public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
+    //public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
+    public static List<String> slaveNodeNameList = Arrays.asList("davenport");
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}
@@ -125,6 +126,7 @@ public class DistributedGroundingUtil {
     public static boolean isNodeRoleMaster() {
         String hostname = SystemUtils.getHostname();
         log.info("Hostname is " + hostname);
+        log.info("Designated master node " + masterNodeName);
         if (hostname.equals(masterNodeName)) {
             isMaster = true;
         }
