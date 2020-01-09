@@ -72,6 +72,13 @@ import java.lang.NoSuchFieldException;
 import java.util.Arrays;
 import java.util.List;
 import java.nio.ByteBuffer;
+//import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Determine the role of the node.
@@ -80,11 +87,13 @@ public class DistributedGroundingUtil {
     private static final Logger log = LoggerFactory.getLogger(DistributedGroundingUtil.class);
     //public static final String DOMAIN_NAME = ".soe.ucsc.edu";
     public static final String DOMAIN_NAME = ".soe.ucsc.edu";
-    public static String masterNodeName = "sunset";
-    //public static String masterNodeName = "eduroam-169-233-205-33.ucsc.edu";
+    //public static String masterNodeName = "sunset";
+    public static String masterNodeName = "128.114.48.112";
+    public static String interfaceName = "eth0";
     final static int port = 6066;
     //public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
-    public static List<String> slaveNodeNameList = Arrays.asList("davenport");
+    public static List<String> slaveNodeNameList = Arrays.asList("128.114.48.74");
+    //public static List<String> slaveNodeNameList = Arrays.asList("davenport");
     public static boolean isMaster = false;
 
     private DistributedGroundingUtil() {}
@@ -123,19 +132,37 @@ public class DistributedGroundingUtil {
         return new String(byteBuffer.array(), "UTF-8");
     }
 
+    public static String[] getNonLocalHostAddresses() {
+      Set<String> HostAddresses = new HashSet<>();
+      try {
+        for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+          if (!ni.isLoopback() && ni.isUp() && ni.getHardwareAddress() != null) {
+            for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
+              if (ia.getBroadcast() != null) {  //If limited to IPV4
+                HostAddresses.add(ia.getAddress().getHostAddress());
+              }
+            }
+          }
+        }
+      } catch (SocketException e) { }
+      return HostAddresses.toArray(new String[0]);
+    }
+
+
     public static boolean isNodeRoleMaster() {
-        String hostname = SystemUtils.getHostname();
-        log.info("Hostname is " + hostname);
+        String[] hostaddresses = getNonLocalHostAddresses();
+        String hostaddress = hostaddresses[0];
+        log.info("Hostname is " + hostaddress);
         log.info("Designated master node " + masterNodeName);
-        if (hostname.equals(masterNodeName)) {
+        if (hostaddress.equals(masterNodeName)) {
             isMaster = true;
         }
-        else if (slaveNodeNameList.contains(hostname)) {
+        else if (slaveNodeNameList.contains(hostaddress)) {
             // do nothing
         }
         else {
             try {
-                throw new NoSuchFieldException(String.format("Hostname %s unsupported. Role unknown.", hostname));
+                throw new NoSuchFieldException(String.format("Hostname %s unsupported. Role unknown.", hostaddress));
             } catch (NoSuchFieldException e) {
                 e.printStackTrace();
             }

@@ -112,8 +112,8 @@ public class DistributedGroundingMaster {
         this.worksConnected = 0;
         this.ruleNotDone = true;
         this.totalWorkers = DistributedGroundingUtil.slaveNodeNameList.size();
-        //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName, DistributedGroundingUtil.port);
-        listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
+        listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName, DistributedGroundingUtil.port);
+        //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
         // for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
         //     workerStatus.put(worker, false);
@@ -230,7 +230,8 @@ public class DistributedGroundingMaster {
 
     // write from the socket channel
     private void write(String slaveNodeName, String stringbuffer) throws IOException {
-        InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName + DistributedGroundingUtil.DOMAIN_NAME, 6067);
+        InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName, 6066);
+        //InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName + DistributedGroundingUtil.DOMAIN_NAME, 6067);
         //InetSocketAddress hostAddress = new InetSocketAddress("seacliff.soe.ucsc.edu", 6068);
         log.info("Writing to " + hostAddress);
         SocketChannel worker = SocketChannel.open(hostAddress);
