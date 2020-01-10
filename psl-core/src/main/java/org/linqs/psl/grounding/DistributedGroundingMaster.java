@@ -238,7 +238,6 @@ public class DistributedGroundingMaster {
         //InetSocketAddress hostAddress = new InetSocketAddress("seacliff.soe.ucsc.edu", 6068);
         log.info("Writing to " + slaveNodeName);
         SocketChannel worker = workerChannel.get(slaveNodeName);
-        log.info("From channel map, channel info " + worker.socket().getRemoteSocketAddress());
         ByteBuffer bytebuffer = ByteBuffer.allocate(stringbuffer.length());
         bytebuffer.put(stringbuffer.getBytes());
         bytebuffer.flip();
