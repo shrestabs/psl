@@ -43,10 +43,10 @@ public class ResponseMessage extends Message {
      public String serialize() {
         String buffer= "";
         message_type = (MessageType.RESPONSE).getValue();
-        log.info("Added msg type first" + message_type);
+        log.info("Added msg type " + message_type);
         for (String[] arr : outQueryResult) {
             for (String s: arr) {
-                System.out.println("Added " + s);
+                //System.out.println("Added " + s);
                 buffer = buffer.concat(s + "\t");
                }
                buffer = buffer.concat("\t"); // double tab for new line
@@ -54,7 +54,7 @@ public class ResponseMessage extends Message {
         buffer = buffer.concat("\t"); // triple tab for new Data Struct
 
         for (Map.Entry<String, Integer> entry : outVariableMap.entrySet()) {
-            System.out.println("Added " + entry.getKey() + "\t" + entry.getValue() + "\t");
+            //System.out.println("Added " + entry.getKey() + "\t" + entry.getValue() + "\t");
             buffer = buffer.concat(entry.getKey() + "\t" + entry.getValue() + "\t");
         }
 
@@ -81,8 +81,8 @@ public class ResponseMessage extends Message {
         String[] lines = dataStructs[0].split("\t\t");
         for (String s: lines) {
             String[] word = s.split("\t");
-            for (int i=0; i < word.length ; i++)
-                System.out.println(word[i]);
+            //for (int i=0; i < word.length ; i++)
+            //    System.out.println(word[i]);
             outQueryResult.add(word);
         }
 

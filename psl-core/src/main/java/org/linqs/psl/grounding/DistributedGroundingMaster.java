@@ -102,7 +102,7 @@ public class DistributedGroundingMaster {
     boolean ruleNotDone;
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
-    HashMap<String, Boolean> workerStatus = new HashMap<>(); 
+    HashMap<String, Boolean> workerBusyStatus = new HashMap<>(); 
     HashMap<String, SocketChannel> workerChannel = new HashMap<>(); 
     Map<Variable, Integer> goldStandardOutVariableMap = new HashMap <Variable,Integer>();
    
@@ -117,7 +117,7 @@ public class DistributedGroundingMaster {
         //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
         //for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
-        //     workerStatus.put(worker, false);
+        //     workerBusyStatus.put(worker, false);
         //}
 
         // try {
@@ -198,12 +198,11 @@ public class DistributedGroundingMaster {
     * Finds the next free worker in the worker list 
     */
     private String findNextFreeWorker() {
-        Iterator<Map.Entry<String, Boolean>> itr = workerStatus.entrySet().iterator(); 
+        Iterator<Map.Entry<String, Boolean>> itr = workerBusyStatus.entrySet().iterator(); 
         while (itr.hasNext()) {
             Map.Entry<String, Boolean> entry = itr.next();
             if (entry.getValue() == false) {
                 log.info("Next free worker " + entry.getKey());
-                workerStatus.put(entry.getKey(), true);
                 return entry.getKey();
             }
         }
@@ -220,8 +219,8 @@ public class DistributedGroundingMaster {
         Socket socket = channel.socket();
         SocketAddress remoteAddr = socket.getRemoteSocketAddress();
         workerChannel.put(remoteAddr.toString(), channel);
-        workerStatus.put(remoteAddr.toString(), false);
-        log.info("On accept Put false" + remoteAddr.toString() + " WorkerStatus Size" + Integer.toString(workerStatus.size()) + " WorkerChannel Size" + Integer.toString(workerChannel.size()));
+        workerBusyStatus.put(remoteAddr.toString(), false);
+        log.info("On accept Put false" + remoteAddr.toString() + " WorkerStatus Size" + Integer.toString(workerBusyStatus.size()) + " WorkerChannel Size" + Integer.toString(workerChannel.size()));
         log.info("Connected to: " + remoteAddr);
         worksConnected = worksConnected + 1;
 
@@ -243,20 +242,21 @@ public class DistributedGroundingMaster {
         bytebuffer.put(stringbuffer.getBytes());
         bytebuffer.flip();
         worker.write(bytebuffer);
+        workerBusyStatus.put(slaveNodeName, true);
     }
 
     // read from the socket channel
     private String read(SelectionKey key) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
+        Socket socket = channel.socket();
+        SocketAddress remoteAddr = socket.getRemoteSocketAddress();
         ByteBuffer buffer = ByteBuffer.allocate(1024000);  // TODO: revisit this size
         int numRead = -1;
         numRead = channel.read(buffer);
         //create response message 
 
         if (numRead == -1) {
-            Socket socket = channel.socket();
-            SocketAddress remoteAddr = socket.getRemoteSocketAddress();
-            workerStatus.put(remoteAddr.toString(), false);
+            workerBusyStatus.put(remoteAddr.toString(), true);
             System.out.println("Connection closed by client: " + remoteAddr);
             channel.close();
             key.cancel();
@@ -267,6 +267,7 @@ public class DistributedGroundingMaster {
         System.arraycopy(buffer.array(), 0, data, 0, numRead);
         String ret = new String(data);
         log.info("String read on master node is "+ ret);
+        workerBusyStatus.put(remoteAddr.toString(), false);
         buffer.clear();
         return ret;
     }
@@ -335,24 +336,26 @@ public class DistributedGroundingMaster {
                int nextWorkerToSend = 0;
                 while (ruleNotDone) {
                     log.info("Rule not done");
-                    String slaveNodeName = findNextFreeWorker(); //TODO: handle return value ""
-                    if (nextConstantToSend < totalNumberOfConstants) {
-                        // now attempt sending query messages
-                        QueryMessage queryMessage = new QueryMessage();
-                        queryMessage.inRuleIndex = rule_index;
-                        queryMessage.inVariableName = variableString;
-                        //ConstantType constantType = ConstantType.getType(constantList[]); // This should be a String to pass to worker.
-                        String constantString = constantList.get(nextConstantToSend).rawToString();
-                        queryMessage.inConstantValue = constantString;
-                        log.info("Sending sub-query " + constantString);
-                        String buffer = queryMessage.serialize();
-                        this.write(slaveNodeName, buffer);
-                        nextConstantToSend = nextConstantToSend + 1;
-                    }
-    
-                    log.info("Write done for " + Integer.toString(nextConstantToSend - 1) + " of " + Integer.toString(totalNumberOfConstants));
-                    if (nextConstantToSend >= totalNumberOfConstants) {
-                        ruleNotDone = false;
+                    String slaveNodeName = findNextFreeWorker();
+                    if (! slaveNodeName.equals("")) {
+                        if (nextConstantToSend < totalNumberOfConstants) {
+                            // now attempt sending query messages
+                            QueryMessage queryMessage = new QueryMessage();
+                            queryMessage.inRuleIndex = rule_index;
+                            queryMessage.inVariableName = variableString;
+                            //ConstantType constantType = ConstantType.getType(constantList[]); // This should be a String to pass to worker.
+                            String constantString = constantList.get(nextConstantToSend).rawToString();
+                            queryMessage.inConstantValue = constantString;
+                            log.info("Sending sub-query " + constantString);
+                            String buffer = queryMessage.serialize();
+                            this.write(slaveNodeName, buffer);
+                            nextConstantToSend = nextConstantToSend + 1;
+                        }
+        
+                        log.info("Write done for " + Integer.toString(nextConstantToSend - 1) + " of " + Integer.toString(totalNumberOfConstants));
+                        if (nextConstantToSend >= totalNumberOfConstants) {
+                            ruleNotDone = false;
+                        }
                     }
 
                     // wait for responses events

@@ -187,6 +187,9 @@ public class DistributedGroundingWorker {
             while (!done) {
                 ByteBuffer bytebuffer = ByteBuffer.allocate(480000);
                 int bytesRead = master.read(bytebuffer);
+                if (bytesRead == -1) {
+                    continue;
+                }
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(bytebuffer.array(), 0, data, 0, bytesRead);
                 String buffer = new String(data);
