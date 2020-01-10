@@ -77,6 +77,7 @@ import java.util.Set;
 import java.net.*;
 import java.io.*;
 
+import org.linqs.psl.grounding.messages.DoneMessage;
 import org.linqs.psl.grounding.messages.QueryMessage;
 import org.linqs.psl.grounding.messages.ResponseMessage;
 import org.linqs.psl.grounding.messages.Message.MessageType;
@@ -333,7 +334,7 @@ public class DistributedGroundingMaster {
                int nextConstantToSend = 0;
                int totalNumberOfConstants = constantList.size();
                System.out.println("totalNumberOfConstants = " + Integer.toString(totalNumberOfConstants));
-               int nextWorkerToSend = 0;
+                ruleNotDone = true;
                 while (ruleNotDone) {
                     log.info("Rule not done");
                     String slaveNodeName = findNextFreeWorker();
@@ -411,6 +412,17 @@ public class DistributedGroundingMaster {
                 goldStandardOutVariableMap.clear();
 
             } // for (int rule_index = 0; rule_index < num_rules; rule_index++)
+        
+        // Send done message and close connection with all workers
+        DoneMessage doneMessage = new DoneMessage(true);
+        String done_buffer = doneMessage.serialize();
+        Iterator<Map.Entry<String, Boolean>> itr = workerBusyStatus.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, Boolean> entry = itr.next();
+            this.write(entry.getKey(), done_buffer);
+        }
+        
+        // close all channels with workers?
     
         } catch (IOException e) {
             e.printStackTrace();

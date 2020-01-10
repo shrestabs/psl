@@ -37,7 +37,7 @@ public class DoneMessage extends Message {
     }
 
     //TESTED
-     protected String serialize() {
+     public String serialize() {
         String buffer = String.valueOf(isDone);
         message_size = buffer.length();
         log.info("Message size " + Integer.toString(message_size));
@@ -49,7 +49,7 @@ public class DoneMessage extends Message {
      }
 
     //TESTED
-     protected void deserialize(String buffer) {    
+     public void deserialize(String buffer) {    
         String strMessageType = buffer.substring(0, 1);
         message_type = Integer.parseInt(strMessageType);
         log.info("Got Message type " + Integer.toString(message_type));

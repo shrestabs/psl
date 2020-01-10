@@ -58,7 +58,7 @@ import java.util.Set;
  * Static utilities for common {@link Model}-grounding tasks.
  */
 public class Grounding {
-    private static final boolean enableDistributedGrounding = true;
+    private static final boolean enableDistributedGrounding = false;
     private static final Logger log = LoggerFactory.getLogger(Grounding.class);
 
     public static final String CONFIG_PREFIX = "grounding";
