@@ -103,6 +103,7 @@ public class DistributedGroundingMaster {
     AtomManager atomManager; 
     GroundRuleStore groundRuleStore;
     HashMap<String, Boolean> workerStatus = new HashMap<>(); 
+    HashMap<String, SocketChannel> workerChannel = new HashMap<>(); 
     Map<Variable, Integer> goldStandardOutVariableMap = new HashMap <Variable,Integer>();
    
     public DistributedGroundingMaster(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
@@ -115,9 +116,9 @@ public class DistributedGroundingMaster {
         listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName, DistributedGroundingUtil.port);
         //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
-        // for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
-        //     workerStatus.put(worker, false);
-        // }
+        for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
+             workerStatus.put(worker, false);
+        }
 
         // try {
         //     serverSocket = new ServerSocket(port);
@@ -188,7 +189,8 @@ public class DistributedGroundingMaster {
                 smallestTerm = termInQuestion;
             } 
         }
-        System.out.println("Num Constants: " + numConstants);
+        log.info("Num Constants: " + numConstants);
+        log.info("Smallest term " + smallestTerm);
         return smallestTerm;
     }
 
@@ -202,12 +204,12 @@ public class DistributedGroundingMaster {
             if (entry.getValue() == false) {
                 log.info("Next free worker " + entry.getKey());
                 workerStatus.put(entry.getKey(), true);
-                //return entry.getKey();
+                return entry.getKey();
             }
         }
         log.error(" slave Not found");
-        //return "";
-        return "seacliff";
+        return "";
+        //return "seacliff";
     }
 
     // accept client connection
@@ -217,8 +219,9 @@ public class DistributedGroundingMaster {
         channel.configureBlocking(false);
         Socket socket = channel.socket();
         SocketAddress remoteAddr = socket.getRemoteSocketAddress();
+        workerChannel.put(remoteAddr.toString(), channel);
         workerStatus.put(remoteAddr.toString(), false);
-        System.out.println("Connected to: " + remoteAddr);
+        log.info("Connected to: " + remoteAddr);
         worksConnected = worksConnected + 1;
 
         /*
@@ -230,11 +233,12 @@ public class DistributedGroundingMaster {
 
     // write from the socket channel
     private void write(String slaveNodeName, String stringbuffer) throws IOException {
-        InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName, 6066);
+        //InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName, 6066);
         //InetSocketAddress hostAddress = new InetSocketAddress(slaveNodeName + DistributedGroundingUtil.DOMAIN_NAME, 6067);
         //InetSocketAddress hostAddress = new InetSocketAddress("seacliff.soe.ucsc.edu", 6068);
-        log.info("Writing to " + hostAddress);
-        SocketChannel worker = SocketChannel.open(hostAddress);
+        log.info("Writing to " + slaveNodeName);
+        SocketChannel worker = workerChannel.get(slaveNodeName);
+        log.info("From channel map, channel info " + worker.socket().getRemoteSocketAddress());
         ByteBuffer bytebuffer = ByteBuffer.allocate(stringbuffer.length());
         bytebuffer.put(stringbuffer.getBytes());
         bytebuffer.flip();
@@ -261,10 +265,10 @@ public class DistributedGroundingMaster {
 
         byte[] data = new byte[numRead];
         System.arraycopy(buffer.array(), 0, data, 0, numRead);
+        String ret = new String(data);
+        log.info("String read on master node is "+ new String(data));
         return new String(data);
     }
-
-
 
     public void run() {
           try {
@@ -330,8 +334,7 @@ public class DistributedGroundingMaster {
                int nextWorkerToSend = 0;
                 while (ruleNotDone) {
                     log.info("Rule not done");
-                    System.out.println("finding next free worker");
-                    String slaveNodeName = findNextFreeWorker();
+                    String slaveNodeName = findNextFreeWorker(); //TODO: handle return value ""
                     if (nextConstantToSend < totalNumberOfConstants) {
                         // now attempt sending query messages
                         QueryMessage queryMessage = new QueryMessage();
@@ -345,6 +348,8 @@ public class DistributedGroundingMaster {
                         this.write(slaveNodeName, buffer);
                         nextConstantToSend = nextConstantToSend + 1;
                     }
+    
+                    log.info("Write done for " + Integer.toString(nextConstantToSend - 1) + " of " + Integer.toString(totalNumberOfConstants));
                     if (nextConstantToSend >= totalNumberOfConstants) {
                         ruleNotDone = false;
                     }

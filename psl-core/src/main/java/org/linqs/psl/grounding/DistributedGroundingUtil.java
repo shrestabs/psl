@@ -92,7 +92,7 @@ public class DistributedGroundingUtil {
     public static String interfaceName = "eth0";
     final static int port = 6066;
     //public static List<String> slaveNodeNameList = Arrays.asList("sozopol", "sunset", "seacliff");
-    public static List<String> slaveNodeNameList = Arrays.asList("128.114.48.74");
+    public static List<String> slaveNodeNameList = Arrays.asList("128.114.48.74", "128.114.48.73");
     //public static List<String> slaveNodeNameList = Arrays.asList("davenport");
     public static boolean isMaster = false;
 

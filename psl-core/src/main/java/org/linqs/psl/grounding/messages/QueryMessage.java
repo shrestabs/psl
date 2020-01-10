@@ -39,7 +39,7 @@ public class QueryMessage extends Message {
         message_size = buffer.length();
         message_type = (MessageType.QUERY).getValue();
         buffer = Integer.toString(message_type) + String.format("%08d", message_size) + buffer;
-        log.debug("Serialized {}, {}, {} to {}", this.inRuleIndex, this.inVariableName, this.inConstantValue, buffer);
+        log.info("Serialized {}, {}, {} to {}", this.inRuleIndex, this.inVariableName, this.inConstantValue, buffer);
         return buffer;
     }
 
@@ -53,7 +53,7 @@ public class QueryMessage extends Message {
         this.inRuleIndex = Integer.parseInt(values[0]);
         this.inVariableName = values[1];
         this.inConstantValue = values[2];
-        log.debug("Deserialized {} to {}, {}, {}", buffer, this.inRuleIndex, this.inVariableName, this.inConstantValue);
+        log.info("Deserialized {} to {}, {}, {}", buffer, this.inRuleIndex, this.inVariableName, this.inConstantValue);
     }
 
     // @Override

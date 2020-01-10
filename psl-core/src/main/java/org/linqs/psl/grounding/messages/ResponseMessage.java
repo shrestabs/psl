@@ -55,6 +55,7 @@ public class ResponseMessage extends Message {
 
         message_size = buffer.length();
         buffer = Integer.toString(message_type) + String.format("%08d", message_size) + buffer;
+        log.info("Serialized response message to {}", buffer);
         return buffer;
      }
 
