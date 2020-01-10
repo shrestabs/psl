@@ -37,7 +37,9 @@ public class QueryMessage extends Message {
         String buffer;
         buffer = Integer.toString(this.inRuleIndex) + "," + this.inVariableName + "," + this.inConstantValue;
         message_size = buffer.length();
+        log.info("Added msg size " + Integer.ToString(message_size));
         message_type = (MessageType.QUERY).getValue();
+        log.info("Added msg type " + Integer.ToString(message_type));
         buffer = Integer.toString(message_type) + String.format("%08d", message_size) + buffer;
         log.info("Serialized {}, {}, {} to {}", this.inRuleIndex, this.inVariableName, this.inConstantValue, buffer);
         return buffer;
@@ -46,8 +48,10 @@ public class QueryMessage extends Message {
     public void deserialize(String buffer) {
         String strMessageType = buffer.substring(0, 1);
         message_type = Integer.parseInt(strMessageType);
+        log.info("Got msg type " + Integer.ToString(message_type));
         String strMessageSize = buffer.substring(1, 9);
         message_size = Integer.parseInt(strMessageSize);
+        log.info("Got msg size " + Integer.ToString(message_size));
         buffer = buffer.substring(9, 9 + message_size);
         String[] values = buffer.split(",");
         this.inRuleIndex = Integer.parseInt(values[0]);
