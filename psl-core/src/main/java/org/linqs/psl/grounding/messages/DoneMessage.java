@@ -40,9 +40,9 @@ public class DoneMessage extends Message {
      protected String serialize() {
         String buffer = String.valueOf(isDone);
         message_size = buffer.length();
-        log.info("Message size " + Integer.tostring(message_size));
+        log.info("Message size " + Integer.toString(message_size));
         message_type = (MessageType.DONE).getValue();
-        log.info("Message type " + Integer.tostring(message_type));
+        log.info("Message type " + Integer.toString(message_type));
         buffer = Integer.toString(message_type) + String.format("%08d", message_size) + buffer; //TODO: fix size
         log.debug("Serialized {} to {}",isDone, buffer);
         return buffer;
@@ -52,10 +52,10 @@ public class DoneMessage extends Message {
      protected void deserialize(String buffer) {    
         String strMessageType = buffer.substring(0, 1);
         message_type = Integer.parseInt(strMessageType);
-        log.info("Got Message type " + Integer.tostring(message_type));
+        log.info("Got Message type " + Integer.toString(message_type));
         String strMessageSize = buffer.substring(1, 9);
         message_size = Integer.parseInt(strMessageSize);
-        log.info("Got Message size " + Integer.tostring(message_size));
+        log.info("Got Message size " + Integer.toString(message_size));
         isDone = Boolean.parseBoolean(buffer.substring(9, 9 + message_size));
         log.debug("Deserialized {} to {}", buffer, isDone);
      }
