@@ -265,9 +265,9 @@ public class DistributedGroundingMaster {
         byte[] data = new byte[numRead];
         System.arraycopy(buffer.array(), 0, data, 0, numRead);
         String ret = new String(data);
-        log.info("String read on master node is "+ new String(data));
+        log.info("String read on master node is "+ ret);
         buffer.clear();
-        return new String(data);
+        return ret;
     }
 
     public void run() {

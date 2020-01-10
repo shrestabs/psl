@@ -190,6 +190,7 @@ public class DistributedGroundingWorker {
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(bytebuffer.array(), 0, data, 0, bytesRead);
                 String buffer = new String(data);
+                bytebuffer.clear();
                 //String buffer = in.readUTF();
                 log.info("Worker received " + buffer);
                 if ((MessageType.DONE).getValue() == Integer.parseInt(buffer.substring(0, 1))) {
