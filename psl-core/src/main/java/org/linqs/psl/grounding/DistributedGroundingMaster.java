@@ -247,7 +247,7 @@ public class DistributedGroundingMaster {
     // read from the socket channel
     private String read(SelectionKey key) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(1024000);
+        ByteBuffer buffer = ByteBuffer.allocate(1024000);  // TODO: revisit this size
         int numRead = -1;
         numRead = channel.read(buffer);
         //create response message 
@@ -266,6 +266,7 @@ public class DistributedGroundingMaster {
         System.arraycopy(buffer.array(), 0, data, 0, numRead);
         String ret = new String(data);
         log.info("String read on master node is "+ new String(data));
+        buffer.clear();
         return new String(data);
     }
 

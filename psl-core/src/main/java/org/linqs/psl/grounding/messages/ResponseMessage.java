@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class ResponseMessage extends Message {
     String messagename;
-    private static final Logger log = LoggerFactory.getLogger(DoneMessage.class);
+    private static final Logger log = LoggerFactory.getLogger(ResponseMessage.class);
     public List <String[]> outQueryResult; // List <Constant[]> outQueryResult;
     public Map<String, Integer> outVariableMap; //Map<Variable, Integer> outVariableMap;
 
