@@ -81,7 +81,8 @@ public class ResponseMessage extends Message {
         String[] lines = dataStructs[0].split("\t\t");
         for (String s: lines) {
             String[] word = s.split("\t");
-            System.out.println(word);
+            for (int i=0; i < word.length ; i++)
+                System.out.println(word[i]);
             outQueryResult.add(word);
         }
 

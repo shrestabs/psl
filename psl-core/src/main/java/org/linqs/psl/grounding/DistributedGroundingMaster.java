@@ -116,9 +116,9 @@ public class DistributedGroundingMaster {
         listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName, DistributedGroundingUtil.port);
         //listenAddress = new InetSocketAddress(DistributedGroundingUtil.masterNodeName + DistributedGroundingUtil.DOMAIN_NAME, DistributedGroundingUtil.port);
         //TODO figure which workers are online 
-        for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
-             workerStatus.put(worker, false);
-        }
+        //for (String worker : DistributedGroundingUtil.slaveNodeNameList) {
+        //     workerStatus.put(worker, false);
+        //}
 
         // try {
         //     serverSocket = new ServerSocket(port);
@@ -221,6 +221,7 @@ public class DistributedGroundingMaster {
         SocketAddress remoteAddr = socket.getRemoteSocketAddress();
         workerChannel.put(remoteAddr.toString(), channel);
         workerStatus.put(remoteAddr.toString(), false);
+        log.info("On accept Put false" + remoteAddr.toString() + " WorkerStatus Size" + Integer.toString(workerStatus.size()) + " WorkerChannel Size" + Integer.toString(workerChannel.size()));
         log.info("Connected to: " + remoteAddr);
         worksConnected = worksConnected + 1;
 
